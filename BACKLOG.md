@@ -237,7 +237,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
   - Prueba: dry-run imprime escenarios exactos; tests confirman número/valores de casos.
-- [x] B09.4 **DONE — reportes por run implementados; pendiente verificar los seis artefactos y escritura atómica.**
+- [x] B09.4 **DONE — reportes por run implementados; el CSV inicializa su cabecera incluso al ejecutar un escenario aislado. Pendiente verificar los seis artefactos, escritura atómica y CSV con ejecuciones reales.** Evidencia: fix de cabecera commit `6823ca6`; pruebas runtime pendientes.
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
