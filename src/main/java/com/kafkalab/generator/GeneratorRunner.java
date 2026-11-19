@@ -38,7 +38,11 @@ public class GeneratorRunner implements ApplicationRunner {
                 ? Long.parseLong(args.getOptionValues("timeout-seconds").get(0)) : 600L;
         if (timeoutSeconds < 1) throw new IllegalArgumentException("--timeout-seconds must be positive");
         String runId = args.containsOption("run-id") ? args.getOptionValues("run-id").get(0) : ids.newRunId();
-        offsetSnapshot.capture(runId);
+        try {
+            offsetSnapshot.capture(runId);
+        } catch (Exception snapshotFailure) {
+            throw new GenerationFailedException("Could not capture initial Kafka offsets for run " + runId, snapshotFailure);
+        }
         long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
         String payload = payloadFor(properties.payloadBytes());
         ExecutorService pool = Executors.newFixedThreadPool(properties.generatorThreads());
@@ -86,8 +90,15 @@ public class GeneratorRunner implements ApplicationRunner {
                     }
                 }));
             }
-            for (Future<?> worker : workers) {
-                worker.get(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS);
+            try {
+                for (Future<?> worker : workers) {
+                    worker.get(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new GenerationFailedException("Interrupted while waiting for generator workers", e);
+            } catch (ExecutionException | TimeoutException e) {
+                throw new GenerationFailedException("Generator workers did not complete successfully", e);
             }
             double seconds = (System.nanoTime() - start) / 1_000_000_000d;
             System.out.printf("{\"runId\":\"%s\",\"published\":%d,\"publishStartEpochMs\":%d,\"publishSeconds\":%.6f}%n", runId, completed.get(), publishStartEpochMs, seconds);
