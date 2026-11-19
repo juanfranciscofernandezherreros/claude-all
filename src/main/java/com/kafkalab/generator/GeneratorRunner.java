@@ -44,7 +44,7 @@ public class GeneratorRunner implements ApplicationRunner {
         String runId = args.containsOption("run-id") ? args.getOptionValues("run-id").get(0) : ids.newRunId();
         snapshotOffsets(runId);
         long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
-        String payload = "x".repeat(properties.payloadBytes());
+        String payload = payloadFor(properties.payloadBytes());
         ExecutorService pool = Executors.newFixedThreadPool(properties.generatorThreads());
         AtomicLong completed = new AtomicLong();
         long publishStartEpochMs = System.currentTimeMillis();
@@ -54,8 +54,8 @@ public class GeneratorRunner implements ApplicationRunner {
             for (int worker = 0; worker < properties.generatorThreads(); worker++) {
                 final int workerId = worker;
                 workers.add(pool.submit(() -> {
-                    long blockStride = (long) properties.generatorThreads() * properties.batchSize();
-                    for (long blockStart = (long) workerId * properties.batchSize() + 1; blockStart <= count; blockStart += blockStride) {
+                    for (long blockStart : blockStartsForWorker(count, workerId,
+                            properties.generatorThreads(), properties.batchSize())) {
                         final long currentBlockStart = blockStart;
                         long blockEnd = Math.min(count, blockStart + properties.batchSize() - 1);
                         List<String> records = new ArrayList<>((int) (blockEnd - blockStart + 1));
@@ -97,6 +97,28 @@ public class GeneratorRunner implements ApplicationRunner {
         } finally {
             pool.shutdownNow();
         }
+    }
+
+    static List<Long> blockStartsForWorker(long count, int workerId, int workerCount, int batchSize) {
+        if (count < 0) throw new IllegalArgumentException("count must not be negative");
+        if (workerCount < 1) throw new IllegalArgumentException("workerCount must be positive");
+        if (workerId < 0 || workerId >= workerCount) throw new IllegalArgumentException("workerId is out of range");
+        if (batchSize < 1) throw new IllegalArgumentException("batchSize must be positive");
+
+        long stride = Math.multiplyExact((long) workerCount, batchSize);
+        List<Long> starts = new ArrayList<>();
+        long blockStart = Math.addExact(Math.multiplyExact((long) workerId, batchSize), 1L);
+        while (blockStart <= count) {
+            starts.add(blockStart);
+            if (count - blockStart < stride) break;
+            blockStart += stride;
+        }
+        return starts;
+    }
+
+    static String payloadFor(int bytes) {
+        if (bytes < 1) throw new IllegalArgumentException("payload size must be positive");
+        return "x".repeat(bytes);
     }
 
     private String serialize(InputMessage message) {
