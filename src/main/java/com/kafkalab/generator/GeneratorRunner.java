@@ -110,7 +110,8 @@ public class GeneratorRunner implements ApplicationRunner {
         long blockStart = Math.addExact(Math.multiplyExact((long) workerId, batchSize), 1L);
         while (blockStart <= count) {
             starts.add(blockStart);
-            if (count - blockStart < stride) break;
+            boolean hasNoNextBlock = count - blockStart < stride;
+            if (hasNoNextBlock) break;
             blockStart += stride;
         }
         return starts;
