@@ -59,6 +59,8 @@ curl --fail --silent http://localhost:8080/actuator/health >/dev/null || {
 java_version=$(docker compose exec -T app java -version 2>&1 | sed -n '1p')
 docker_version=$(docker version --format '{{.Server.Version}}')
 warmup_messages="${WARMUP_MESSAGES:-10000}"
+repetitions="${SCENARIO_REPETITIONS:-3}"
+if [[ ! "$repetitions" =~ ^[1-9][0-9]*$ ]]; then echo "ERROR: SCENARIO_REPETITIONS must be a positive integer." >&2; exit 2; fi
 if [[ ! "$warmup_messages" =~ ^[1-9][0-9]*$ ]]; then echo "ERROR: WARMUP_MESSAGES must be a positive integer." >&2; exit 2; fi
 warmup="warmup-${name}-$(date +%s)-$$"
 mkdir -p "$results/$warmup"
@@ -70,7 +72,7 @@ if ! docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
   cat "$results/$warmup/execution.log"
   exit 1
 fi
-for repetition in 1 2 3; do
+for repetition in $(seq 1 "$repetitions"); do
   run_id="${name}-r${repetition}-$(date -u +%Y%m%dT%H%M%S)-$$"
   mkdir -p "$results/$run_id"
   chmod 777 "$results/$run_id"
