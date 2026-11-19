@@ -10,7 +10,8 @@ public class TransactionalProducerConfiguration {
     @Bean
     DefaultKafkaProducerFactoryCustomizer transactionalProducerCustomizer(LabProperties properties) {
         return factory -> {
-            if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
+            boolean isExactlyOnceDeliveryEnabled = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
+            if (isExactlyOnceDeliveryEnabled) {
                 factory.setTransactionIdPrefix("kafka-lab-" + UUID.randomUUID() + "-");
             }
         };
