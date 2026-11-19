@@ -8,8 +8,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 
 /**
- * Applies Boot's Kafka listener defaults and allows in-flight work to finish
- * during application shutdown.
+ * Configures batch consumption so output records can be acknowledged as a group.
  */
 @Configuration
 public class KafkaListenerContainerConfiguration {
@@ -21,6 +20,7 @@ public class KafkaListenerContainerConfiguration {
         ConcurrentKafkaListenerContainerFactory<Object, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         configurer.configure(factory, consumerFactory);
+        factory.setBatchListener(true);
         factory.setCommonErrorHandler(errorHandler);
         factory.getContainerProperties().setShutdownTimeout(30_000L);
         return factory;
