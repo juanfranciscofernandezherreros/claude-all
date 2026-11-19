@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -44,7 +45,7 @@ public class InputMessageListener {
     @KafkaListener(topics = "${lab.input-topic}", groupId = "kafka-lab")
     public void onMessage(String raw, Acknowledgment acknowledgment) {
         metrics.inputReceived();
-        Timer.Sample processingSample = Timer.start(meterRegistry);
+        Timer.Sample processingSample = metrics.startProcessing(meterRegistry);
         final InputMessage input;
         try {
             input = mapper.readValue(raw, InputMessage.class);
@@ -75,6 +76,7 @@ public class InputMessageListener {
             throw new IllegalStateException("Could not serialize output", e);
         }
         metrics.outputPublished();
+        metrics.recordEndToEnd(Duration.between(input.createdAt(), processedAt));
         metrics.stopProcessing(processingSample);
         acknowledgment.acknowledge();
     }
