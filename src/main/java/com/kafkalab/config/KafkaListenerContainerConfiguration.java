@@ -14,11 +14,11 @@ import org.springframework.kafka.listener.DefaultErrorHandler;
 @Configuration
 public class KafkaListenerContainerConfiguration {
     @Bean
-    ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+    ConcurrentKafkaListenerContainerFactory<Object, Object> kafkaListenerContainerFactory(
             ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
-            ConsumerFactory<String, String> consumerFactory,
+            ConsumerFactory<Object, Object> consumerFactory,
             DefaultErrorHandler errorHandler) {
-        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         configurer.configure(factory, consumerFactory);
         factory.setCommonErrorHandler(errorHandler);
