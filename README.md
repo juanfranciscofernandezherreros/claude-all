@@ -1,6 +1,6 @@
 # Kafka Performance Lab
 
-Laboratorio local para generar, transformar, validar y medir mensajes Kafka con Java 21 y Spring Boot 3.4.5. El broker Kafka 3.9.0 arranca en KRaft mediante Docker Compose; no necesita ZooKeeper ni una instalación local de Kafka.
+Laboratorio local para generar, transformar, validar y medir mensajes Kafka con Java 21 y Spring Boot 3.4.5. El broker Kafka 3.9.1 arranca en KRaft mediante Docker Compose; no necesita ZooKeeper ni una instalación local de Kafka.
 
 ## Inicio rápido
 
@@ -51,7 +51,7 @@ Los scripts `mvnw`/`mvnw.cmd` descargan Maven 3.9.9 en el perfil local del usuar
 
 ## Arquitectura y flujo
 
-- `kafka`: Apache Kafka 3.9.0, KRaft, un broker, 24 particiones, replication factor 1.
+- `kafka`: Apache Kafka 3.9.1, KRaft, un broker, 24 particiones, replication factor 1.
 - `app`: Spring Boot, consumer `kafka-lab`, productor de salida, generador y validador independientes.
 - `prometheus`: scrape de Actuator cada 5 segundos.
 - `grafana`: dashboard provisionado automáticamente.
