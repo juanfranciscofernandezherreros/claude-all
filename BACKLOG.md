@@ -177,7 +177,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: iniciar transacción; enviar salida; enviar offsets del consumer group a transacción; commit; ante excepción abortar; no hacer commit manual fuera de transacción.
   - Artefactos: TransactionalMessageHandler.
   - Prueba: salida y offset avanzan juntos o ninguno avanza.
-- [x] B06.3 **DONE — pendiente de verificación ampliada.** CI `984f8ed` ejecutó el test con Testcontainers 1.21.4 + Kafka 3.9.1 (1 passed, 0 skipped): abort de output+offset, offset sin avance y commit atómico. Commit `5d28345` añadió comprobaciones `read_committed`/`read_uncommitted` y reinicio del consumer; la primera CI falló solo por usar `.stream()` sobre `Iterable`, corregido en `81994a9`. Pendiente ejecutar las nuevas assertions.
+- [x] B06.3 **DONE.** CI `81994a9` ejecutó y superó `./mvnw -B clean verify`, incluido el test Testcontainers con Kafka 3.9.1. El test demuestra: abort conjunto de output+offset sin avanzar el offset; `read_committed` no ve el registro abortado; `read_uncommitted` sí lo ve; tras commit, el consumer reiniciado con el mismo groupId no reprocesa la entrada. Evidencia de test: commits `e18851c`, `5d28345`, `81994a9`.
   - Pasos: caso éxito; fallo antes del commit; caída/reinicio; lectura con read_committed y read_uncommitted para demostrar diferencia.
   - Artefactos: tests Testcontainers.
   - Prueba: registros abortados invisibles en read_committed y offsets coherentes.
