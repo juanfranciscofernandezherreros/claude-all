@@ -117,7 +117,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: parsear enum; aplicar exactamente N rondas sobre bytes de resultado anterior; evitar optimización que elimine trabajo; no introducir pausas.
   - Artefactos: WorkloadProcessor y tests.
   - Prueba: outputs deterministas y coste creciente comprobable sin exigir tiempos absolutos.
-- [ ] B03.4 **BLOCKED — cobertura parcial; faltan golden tests, tamaños y JSON corrupto.**
+- [x] B03.4 **DONE — pendiente de CI verde.** Tests amplían contrato con round-trip JSON/Instant y Unicode (`café-東京-🙂`), JSON corrupto, secuencia mínima 0 y límites payload 1 KiB/100 KiB medidos en UTF-8 (`90cacb1c`).
   - Pasos: cubrir casos válidos, campos ausentes, JSON corrupto, Unicode, payload mínimo/máximo y límites configurados.
   - Artefactos: tests unitarios JUnit.
   - Prueba: mvnw -Dtest=*Model*,*Checksum*,*MessageId* test (ajustar patrones a nombres reales).
