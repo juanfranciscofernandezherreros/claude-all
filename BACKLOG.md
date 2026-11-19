@@ -105,7 +105,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B03 — Contrato de dominio
 **Depende:** B01.
-- [x] B03.1 **DONE — tests de contrato JSON añadidos para OutputMessage/DltMessage (nombres de campos, nested result, checksum, original payload, metadata de fallo y round-trip; `10a1d1fd`); pendiente CI.**
+- [x] B03.1 **DONE — tests de contrato JSON añadidos para OutputMessage/DltMessage (nombres de campos, nested result, checksum, original payload, metadata de fallo y round-trip; `10a1d1fd`); primera CI detectó que DLT expone `errorType`/`errorMessage`, no `exception`/`reason` (`44536898572`); test corregido en `7faf0984`. Nueva CI pendiente.**
   - Pasos: declarar campos/tipos exactos del PRD; Bean Validation para null/vacíos/rangos; UTC ISO-8601; schemaVersion=1; preservar entrada original en DLT.
   - Artefactos: model/InputMessage, OutputMessage, DltMessage y tests.
   - Prueba: serialización JSON golden tests y rechazo de cada campo obligatorio inválido.
