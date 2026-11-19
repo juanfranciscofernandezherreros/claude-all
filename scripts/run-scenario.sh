@@ -20,9 +20,6 @@ done
 docker compose exec -T app java -version >/dev/null 2>&1 || { echo "ERROR: application container did not start." >&2; exit 1; }
 java_version=$(docker compose exec -T app java -version 2>&1 | head -1)
 docker_version=$(docker version --format '{{.Server.Version}}')
-docker_memory_usage=$(docker stats --no-stream --format '{{.MemUsage}}' kafka-lab-app 2>/dev/null || true)
-prometheus_metrics=$(curl -fsS http://localhost:8080/actuator/prometheus 2>/dev/null || true)
-consumer_lag=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group kafka-lab 2>/dev/null | awk 'NR>1 && $6 ~ /^[0-9]+$/ {sum += $6} END {print sum+0}' || true)
 warmup="warmup-${name}-$(date +%s)-$$"
 mkdir -p "$results/$warmup"
 echo "Warm-up: $name"
@@ -40,6 +37,9 @@ for repetition in 1 2 3; do
     --spring.main.web-application-type=none --lab.consumer.enabled=false --validate \
     --run-id="$run_id" --messages="$messages" --timeout-seconds=1800 \
     | tee "$results/$run_id/validation-console.json"
+docker_memory_usage=$(docker stats --no-stream --format '{{.MemUsage}}' kafka-lab-app 2>/dev/null || true)
+prometheus_metrics=$(curl -fsS http://localhost:8080/actuator/prometheus 2>/dev/null || true)
+consumer_lag=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group kafka-lab 2>/dev/null | awk 'NR>1 && $6 ~ /^[0-9]+$/ {sum += $6} END {if (NR>1) print sum; else print ""}' || true)
   "$python_bin" - "$results/$run_id" "$results/results.csv" "$name" "$concurrency" "$messages" "$payload" "$workload" "$delivery" "$java_version" "$docker_version" "$docker_memory_usage" "$prometheus_metrics" "$consumer_lag" <<'PY'
 import json,sys,platform,os,datetime,re
 folder,csv_path,name,concurrency,messages,payload,workload,delivery,java_version,docker_version,docker_memory_usage,prometheus_metrics,consumer_lag=sys.argv[1:]
@@ -50,7 +50,7 @@ validated_at=datetime.datetime.fromisoformat(validation["timestamp"].replace("Z"
 end_to_end=max(0.0,validated_at-generated["publishStartEpochMs"]/1000.0)
 throughput=validation["valid"]/end_to_end if end_to_end else 0
 def bytes_from_docker_stats(value):
-    match=re.match(r"\\s*([0-9.]+)\\s*([KMGT]?i?B)",value)
+    match=re.match(r"\s*([0-9.]+)\s*([KMGT]?i?B)",value)
     if not match: return None
     unit=match.group(2)
     factors={"B":1,"kB":1000,"MB":1000**2,"GB":1000**3,"TB":1000**4,
