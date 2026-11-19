@@ -283,6 +283,13 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Artefactos: `docs/solid-principles.md`, `AGENTS.md`.
   - Prueba: revisión de consistencia con PRD/AGENTS y confirmación de que la guía no exige nuevas dependencias ni cambios funcionales.
 
+### B10.8 — Convenciones obligatorias de anotaciones Lombok y Spring
+- [x] B10.8 **DONE — convención documentada para código nuevo y modificado.** Adaptadas al proyecto las reglas de `springboot-agent-rules/docs/annotations.md`: Lombok (`@RequiredArgsConstructor`, `@Slf4j`, builder con prefijo `with`, evitar `@Data`) y anotaciones Spring para controllers, services, configuración, validación y transacciones. Se explicitan límites para no añadir dependencias ni interfaces artificiales y para proteger contratos Kafka/EOS.
+  - Pasos: incorporar las convenciones a `AGENTS.md`; revisar solapamientos con constructor injection/SOLID; registrar fuente externa.
+  - Artefactos: `AGENTS.md`.
+  - Prueba: revisión documental de consistencia; CI no aplica porque no cambia código ejecutable.
+  - Fuente: https://github.com/juanfranciscofernandezherreros/springboot-agent-rules/blob/master/docs/annotations.md
+
 ### B10.7 — Auditoría y refactor SOLID del código existente
 - [ ] B10.7 **BLOCKED — refactor parcial; quedan responsabilidades por separar y CI pendiente.** Primera inspección: `InputMessageListener` combinaba deserialización, validación de entrada, política de procesamiento, publicación Kafka, gestión de offsets y métricas; `GeneratorRunner` combina CLI, concurrencia, serialización, publicación y snapshots de offsets; `ValidationRunner` combina lectura Kafka, validación de contrato/integridad, estadísticas y escritura de informes. No crear interfaces hasta identificar contratos reales.
   - [x] B10.7.1 **DONE — pendiente de verificación CI.** Extraída la política de validación y transformación a `InputMessageProcessor`; el listener queda como adaptador de deserialización, transporte Kafka, ACK/offset y métricas. Tests del listener adaptados para conservar casos de JSON inválido, DLT, salida válida y no-ACK ante fallo de publicación. Commits: `038e5ea`, `ef1caff`, `134eb35`, `256ac17`. No se ha ejecutado Maven localmente.
