@@ -1,6 +1,7 @@
 package com.kafkalab.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kafkalab.exception.KafkaPublishException;
 import com.kafkalab.model.DltMessage;
 import java.time.Instant;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class KafkaErrorHandlerConfiguration {
                         try {
                             operations.send(properties.dltTopic(), String.valueOf(record.key()), json).get(30, TimeUnit.SECONDS);
                         } catch (Exception e) {
-                            throw new IllegalStateException("Transactional DLT publish failed", e);
+                            throw new KafkaPublishException("Transactional DLT publish failed for topic " + properties.dltTopic(), e);
                         }
                         operations.sendOffsetsToTransaction(
                                 Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
@@ -51,7 +52,7 @@ public class KafkaErrorHandlerConfiguration {
                         return true;
                     });
                 } catch (Exception e) {
-                    throw new IllegalStateException("Could not recover failed record transactionally", e);
+                    throw new KafkaPublishException("Could not recover failed record transactionally", e);
                 }
             };
         } else {
