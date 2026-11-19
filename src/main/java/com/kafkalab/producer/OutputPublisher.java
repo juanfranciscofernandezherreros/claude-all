@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,8 @@ public class OutputPublisher {
             throw new KafkaPublishException("Interrupted while publishing Kafka message for key " + key, e);
         } catch (ExecutionException | TimeoutException e) {
             throw new KafkaPublishException("Kafka publish was not acknowledged for key " + key, e);
+        } catch (KafkaException e) {
+            throw new KafkaPublishException("Kafka rejected publication for key " + key, e);
         } finally {
             metrics.stopPublishing(sample);
         }
