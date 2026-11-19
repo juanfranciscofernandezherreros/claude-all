@@ -1,5 +1,6 @@
 package com.kafkalab.producer;
 
+import com.kafkalab.exception.KafkaPublishException;
 import com.kafkalab.metrics.LabMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -22,7 +23,7 @@ public class OutputPublisher {
         try {
             template.send(topic, key, json).get(30, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new IllegalStateException("Kafka publish was not acknowledged for key " + key, e);
+            throw new KafkaPublishException("Kafka publish was not acknowledged for key " + key, e);
         } finally {
             metrics.stopPublishing(sample);
         }
