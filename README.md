@@ -6,7 +6,7 @@ Laboratorio local para generar, transformar, validar y medir mensajes Kafka con 
 
 ### Windows
 
-1. Instala Docker Desktop con Docker Compose v2, Git for Windows (incluye Git Bash) y Python 3.
+1. Instala Docker Desktop con Docker Compose v2, Git for Windows (incluye Git Bash y curl) y Python 3.
 2. Clona este repositorio.
 3. Ejecuta `RUN-KAFKA-LAB.bat`.
 
@@ -14,7 +14,7 @@ El launcher inicia Docker Desktop si está instalado pero detenido, levanta el s
 
 ### Linux
 
-Requisitos: Docker Engine + Compose v2, Git, Bash y Python 3.10 o posterior. Para compilar fuera de Docker, también Java 21.
+Requisitos: Docker Engine + Compose v2, Git, Bash, curl y Python 3.10 o posterior. Para compilar fuera de Docker, también Java 21.
 
 ```bash
 docker compose up -d --build
