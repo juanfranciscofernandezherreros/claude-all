@@ -1,70 +1,42 @@
 @echo off
 setlocal
-title Kafka Performance Lab - Claude Code
+title Kafka Performance Lab
 cd /d "%~dp0"
-
-echo ==================================================
-echo   KAFKA PERFORMANCE LAB - AUTONOMOUS EXECUTION
-echo ==================================================
-echo.
-
-where git >nul 2>&1
-if errorlevel 1 (
-  echo [ERROR] Git is not installed or not in PATH.
-  echo Install Git for Windows and run again.
-  pause
-  exit /b 1
-)
-
-where claude >nul 2>&1
-if errorlevel 1 (
-  echo [ERROR] Claude Code CLI not found in PATH.
-  echo Install and authenticate Claude Code, then run again.
-  pause
-  exit /b 1
-)
-
-if not exist ".git" (
-  echo [INFO] Cloning repository...
-  cd /d "%TEMP%"
-  if not exist "claude-all" (
-    git clone https://github.com/juanfranciscofernandezherreros/claude-all.git
-    if errorlevel 1 (
-      echo [ERROR] Clone failed.
-      pause
-      exit /b 1
-    )
-  ) else (
-    cd /d "%TEMP%\claude-all"
-    git pull
-  )
-  cd /d "%TEMP%\claude-all"
-)
-
 if not exist "PRD.md" (
-  echo [ERROR] PRD.md not found.
+  echo ERROR: Run this file from the cloned claude-all repository.
   pause
   exit /b 1
 )
+where git >nul 2>&1 || (echo ERROR: Install Git for Windows.& pause& exit /b 1)
+where claude >nul 2>&1 || (echo ERROR: Install and authenticate Claude Code CLI.& pause& exit /b 1)
+where docker >nul 2>&1 || (echo ERROR: Install Docker Desktop.& pause& exit /b 1)
 
-where docker >nul 2>&1
+docker info >nul 2>&1
 if errorlevel 1 (
-  echo [WARNING] Docker CLI not found. Claude will inspect this blocker.
-) else (
-  docker info >nul 2>&1
-  if errorlevel 1 echo [WARNING] Docker Engine is not running. Start Docker Desktop.
+  if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" (
+    echo Starting Docker Desktop...
+    start "" "%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
+  ) else (
+    echo ERROR: Docker Engine is stopped and Docker Desktop was not found.
+    pause
+    exit /b 1
+  )
+  for /l %%i in (1,1,60) do (
+    docker info >nul 2>&1
+    if not errorlevel 1 goto docker_ready
+    timeout /t 2 /nobreak >nul
+  )
+  echo ERROR: Docker did not become ready within 120 seconds.
+  pause
+  exit /b 1
 )
-
-echo [INFO] Launching Claude Code. Review permissions implications before use.
-echo.
-claude --dangerously-skip-permissions "Read PRD.md and CLAUDE.md completely. Execute the full Kafka Performance Lab autonomously. Ask no questions. Inspect environment, implement all files, start local Kafka KRaft using Docker Compose, wait for broker readiness, create topics, build and test Java, generate and process 1,000,000 messages, validate output integrity, run benchmarks, optimize, rerun tests and save truthful reports. Never invent results. If an external permission or dependency blocks execution, document the exact blocker and continue independent work."
-
+:docker_ready
+echo Running the complete project autonomously.
+echo WARNING: --dangerously-skip-permissions grants Claude broad access.
+echo Run only in this trusted repository and review changes afterwards.
+claude --dangerously-skip-permissions "Read PRD.md and CLAUDE.md. Execute the full specification. Minimize narration and token use. Implement, build, test, start local Kafka with Docker Compose, run the 1M benchmark, independently validate outputs, save truthful reports, and fix failures. Ask no questions. Never fabricate results."
 set "RC=%ERRORLEVEL%"
 echo.
-if "%RC%"=="0" (
-  echo [SUCCESS] Claude Code exited successfully.
-) else (
-  echo [WARNING] Claude Code exit code: %RC%. Check output and benchmark reports.
-)
+if "%RC%"=="0" (echo Claude finished.) else (echo Claude exit code: %RC%.)
 pause
 exit /b %RC%
