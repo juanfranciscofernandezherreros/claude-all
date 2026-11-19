@@ -11,12 +11,17 @@ Cada ID de tarea es una unidad ejecutable, no una sugerencia. Antes de implement
 5. Marcar DONE solo si pasa; si no, corregir o marcar BLOCKED con causa, nunca saltar silenciosamente.
 6. Registrar evidencia corta: comando, resultado observado y archivos afectados.
 
-Una tarea sin pasos, artefactos y prueba no está suficientemente definida: desglosarla en este mismo archivo antes de codificarla. No convertir cada paso en una llamada independiente a Claude; agrupar trabajo relacionado para ahorrar tokens.
+Una tarea sin pasos, artefactos y prueba no está suficientemente definida: desglosarla en este mismo archivo antes de codificarla. El trabajo de Claude puede agruparse para ahorrar tokens, pero los cambios Git deben seguir siendo commits atómicos por paso verificable.
 
 ## Reglas de ejecución
 - Orden: fases B00–B10. No empezar una fase si fallan sus dependencias, salvo trabajo independiente.
 - Por tarea: implementar -> ejecutar validación indicada -> corregir -> anotar evidencia breve (comando y resultado).
-- Commits pequeños por fase. No generar documentación duplicada: README para uso; PRD para requisitos; este archivo para tareas.
+- **Granularidad Git obligatoria:** un commit por cada paso pequeño que produzca un cambio real en archivos. Si un punto de “Pasos” contiene varias acciones independientes, dividirlo en commits atómicos adicionales. No agrupar pasos distintos en un único commit.
+- Cada commit debe incluir solo los archivos del paso y usar Conventional Commits con ID de tarea: `feat(B04.2): add deterministic message ID generator`, `test(B04.2): verify ID uniqueness`, `docs(B04.2): document generator flags`, `fix(B05.3): commit offsets after output ack`.
+- Antes de cada commit: revisar `git diff --check`, ejecutar la prueba más específica disponible y comprobar `git status`. No crear commits vacíos. Las comprobaciones que no cambien archivos se anotan como evidencia, sin commit artificial.
+- Mantener historial lineal y legible: no squash, no rebase interactivo, no amend de commits ya publicados y no force-push. No mezclar tareas distintas.
+- Si un cambio intermedio depende de otro para compilar, hacer el menor commit vertical que deje el proyecto compilable; documentar la dependencia. Al cerrar cada tarea, actualizar su checkbox y evidencia en un commit propio si no quedó incluida en el último commit funcional.
+- No generar documentación duplicada: README para uso; PRD para requisitos; este archivo para tareas y evidencias.
 - Mantener el consumo de Claude bajo: leer PRD y BACKLOG una vez al inicio; después consultar solo archivos relevantes. No imprimir archivos completos ni narrar operaciones. Resumen final con evidencias y bloqueos.
 - No marcar DONE por inspección visual. No inventar pruebas, cifras ni hardware.
 - Si falta una decisión técnica menor, aplicar la opción más simple compatible con PRD, documentarla en ADR breve solo si afecta arquitectura; no preguntar.
@@ -272,6 +277,22 @@ B01 -> B03 -> B04
 B04+B05 -> B07
 B04+B05 -> B08
 B06+B07+B08 -> B09
+
+## Protocolo de commits por micro-paso
+Para cada acción independiente dentro de “Pasos”:
+1. Implementar solo esa acción.
+2. Ejecutar comprobación focalizada; si procede, ejecutar `./mvnw -q -DskipTests=false test` o el test específico.
+3. Revisar `git diff --check` y `git status --short`.
+4. Crear un commit real con formato `tipo(ID): verbo + objeto`; tipos permitidos: feat, fix, test, build, docs, refactor, chore.
+5. No incluir cambios ajenos ni resultados masivos. No crear commits vacíos para comandos de inspección.
+6. Continuar con el siguiente micro-paso.
+Al terminar el ID padre, ejecutar su prueba de aceptación completa y actualizar TODO -> DONE o BLOCKED con evidencia. Esa actualización también debe quedar en un commit visible.
+
+Ejemplos:
+- `build(B01.1): add Spring Boot dependency management`
+- `feat(B01.1): configure Kafka and actuator starters`
+- `test(B03.2): verify deterministic message IDs`
+- `fix(B05.3): acknowledge offsets after output confirmation`
 
 ## Protocolo de cierre por tarea
 En cada checkbox sustituir TODO por DONE solo tras pasar aceptación; si no, BLOCKED con causa y evidencia. Registrar en una línea: `ID | estado | comando/prueba | resultado`. No pegar logs extensos en este archivo: guardar logs bajo benchmark-results. Si cambia alcance/arquitectura, actualizar primero PRD y este backlog en el mismo commit.
