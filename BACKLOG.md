@@ -117,7 +117,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: parsear enum; aplicar exactamente N rondas sobre bytes de resultado anterior; evitar optimización que elimine trabajo; no introducir pausas.
   - Artefactos: WorkloadProcessor y tests.
   - Prueba: outputs deterministas y coste creciente comprobable sin exigir tiempos absolutos.
-- [x] B03.4 **DONE — pendiente de CI verde.** Tests amplían contrato con round-trip JSON/Instant y Unicode (`café-東京-🙂`), JSON corrupto, secuencia mínima 0 y límites payload 1 KiB/100 KiB medidos en UTF-8 (`90cacb1c`).
+- [x] B03.4 **DONE.** CI `44532639846` superó `clean verify`; incluidos round-trip JSON/Instant y Unicode (`café-東京-🙂`), JSON corrupto, secuencia mínima 0 y límites payload 1 KiB/100 KiB en UTF-8 (`90cacb1c`).
   - Pasos: cubrir casos válidos, campos ausentes, JSON corrupto, Unicode, payload mínimo/máximo y límites configurados.
   - Artefactos: tests unitarios JUnit.
   - Prueba: mvnw -Dtest=*Model*,*Checksum*,*MessageId* test (ajustar patrones a nombres reales).
@@ -137,7 +137,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: mantener contador de futures pendientes; flush al terminar; timeout definido; agregar excepciones; no declarar publicación completa con callbacks pendientes.
   - Artefactos: resultado de generación y logging estructurado.
   - Prueba: simular broker inaccesible y comprobar exit code no cero; caso correcto confirma N ACK.
-- [x] B04.4 **DONE — pendiente de CI verde.** El particionado determinista por worker/bloque se extrae a helper probado: N=1 y N=10.000 sin huecos/duplicados con 1/2/5/10/20/64 workers y batch 1/500/1000; payloads 1/5/10/50/100 KiB comprobados (`2003e63d`, `cb90566a`). Testcontainers añade publicación de 10.000 registros con ACK `acks=all`, lectura de los 10.000 y consistencia de partición por clave (`20b733a5`). Primera CI detectó un parseo inválido del nombre del topic en el test (`44532070847`); eliminado en `9522ec9d`. La segunda CI falló esperando ACK porque el test publicaba antes de que el broker eligiera líder en las 24 particiones (`44532090634`); el test ahora espera explícitamente a los 24 líderes y usa deadline global de ACK de 60s (`e000779b`). Nueva CI pendiente.
+- [x] B04.4 **DONE.** CI `44532639846` superó `clean verify` tras esperar la elección de líderes Kafka en 24 particiones (`e000779b`); cubre N=1 y N=10.000 sin huecos/duplicados con 1/2/5/10/20/64 workers y batch 1/500/1000, cinco tamaños payload, ACK de 10.000 mensajes y consistencia de partición por clave (`2003e63d`, `cb90566a`, `20b733a5`, `9522ec9d`, `e000779b`).
   - Pasos: testear N=1, N=10k, payloads definidos, threads concurrentes, fallos y particionado por key.
   - Artefactos: tests unitarios e integración.
   - Prueba: ningún ID repetido; particiones reciben claves; payload de longitud solicitada.
