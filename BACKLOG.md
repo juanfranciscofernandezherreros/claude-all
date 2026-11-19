@@ -241,11 +241,11 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
-- [x] B09.5 **DONE.** CI `44528276019` comprobó valores no nulos en cada una de las tres repeticiones para `memoryBytes` (Docker stats), `heapUsedBytes`, `gcPauseCount`, `gcPauseSeconds` y `kafkaConsumerLag`. `environment.json` conserva la muestra final (no pico) y `prometheus-metrics.txt` el scrape bruto; GC es acumulado desde el arranque. Implementación `35f3ebd`, `f8035e1`, `da34af4`, `08a4447`; assertion CI `98627ce`.
+- [ ] B09.5 **BLOCKED — métricas disponibles solo como snapshot final, no muestreo durante ejecución.** Docker memory, heap JVM, GC y consumer lag se registran en `environment.json`; `prometheus-metrics.txt` conserva scrape bruto. La evidencia actual verifica campos no nulos, pero no calcula máximos/promedios ni series temporales (`35f3ebd`, `f8035e1`, `da34af4`, `08a4447`, CI `44528276019`). Falta muestreador periódico durante cada repetición y agregación de promedio/máximo.
   - Pasos: consultar métricas JVM/Prometheus y Docker stats; muestrear durante ejecución; registrar promedio/máximo; si no hay permiso, guardar unavailable + motivo.
   - Artefactos: environment.json y summary.json.
   - Prueba: campos presentes con valor o motivo explícito; no usar cero para dato desconocido.
-- [x] B09.6 **DONE — pendiente de ejecutar stress en hardware objetivo.** `run-stress.sh` ejecuta escenario configurable con defaults 5M mensajes, concurrencia 20, 100 KiB, HEAVY, EXACTLY_ONCE, warm-up 10k y tres repeticiones; `--dry-run` valida parámetros sin lanzar carga (`a752554`, CI `6cd067a`). Launcher Windows añadido (`3e3050e`).
+- [ ] B09.6 **BLOCKED — `run-stress.sh` solo ejecuta un escenario único; falta el ciclo incremental y las condiciones de parada.** Script actual admite defaults 5M, concurrencia 20, 100 KiB, HEAVY, EXACTLY_ONCE y dry-run (`a752554`, CI `6cd067a`), pero no aumenta en pasos de 100k, no mantiene histórico por escalón y no detiene por error/lag/memoria. Falta implementar la máquina de estados de stress y tests unitarios de cada condición.
   - Pasos: aumentar en 100k; validar cada paso; mantener histórico; detener ante error >0, lag creciente 3 pasos o memoria >85%, o al llegar a 5M.
   - Artefactos: stress runner y resultados por escalón.
   - Prueba: tests unitarios de cada condición de parada.
