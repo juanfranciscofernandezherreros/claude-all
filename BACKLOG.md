@@ -153,7 +153,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: validar DTO; medir inicio/fin; invocar workload; construir salida; publicar con key=messageId; esperar ACK antes de permitir commit.
   - Artefactos: MessageProcessor, OutputPublisher y listener.
   - Prueba: N entradas válidas producen N salidas con mismo ID/sequence y checksum esperado.
-- [x] B05.3 **DONE — test de no-ACK al fallar output (`8f0dfd47`) y backoff exponencial 1s/2s/4s con límite de 3 retries (`2a7d2054`, `73ac01bb`) añadidos; pendiente CI y prueba de retries/DLT en ambos modos.** Backoff/recoverer compilan en CI `bf6acc9`; el recoverer EXACTLY_ONCE usa ahora `ConsumerAwareRecordRecoverer` y `consumer.groupMetadata()` (`9dcb7580`) en vez de fabricar metadata de grupo. Test unitario adicional verifica que un fallo al publicar output propaga el error y NO hace ACK, permitiendo retry (`8f0dfd47`). Falta CI y prueba broker/retry/DLT/offsets en ambos modos.
+- [x] B05.3 **DONE — pendiente de prueba de retry/DLT end-to-end con broker.** Error al publicar output propaga excepción y no hace ACK (`8f0dfd47`); backoff exponencial 1s/2s/4s con límite de tres retries (`2a7d2054`, `73ac01bb`). CI `44538095626` superó `clean verify`; DLT transaccional/offset se verifica aparte en B06.4. Falta forzar fallos reales hasta agotar retries y comprobar recuperación DLT en AT_LEAST_ONCE y EXACTLY_ONCE.
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
