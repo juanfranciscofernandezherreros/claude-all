@@ -37,10 +37,10 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B00 — Inspección y contrato
 **Depende:** nada. **Salida:** estructura existente entendida y decisiones consistentes.
-- [ ] B00.1 Inspeccionar repo, herramientas, Docker, Java, sistema operativo y archivos existentes; no borrar trabajo ajeno.
+- [ ] B00.1 **BLOCKED — inspección parcial remota.** GitHub confirma repositorio `claude-all`, rama `main`, permisos de lectura/escritura y seis archivos de documentación/launcher; no existe código fuente ni árbol Maven todavía. No hay acceso a la máquina local desde la sesión GitHub, por lo que Java, Docker Desktop, SO, CPU y RAM no se pueden verificar aquí. Reanudar esta subtarea desde el equipo local antes de ejecutar Docker/benchmarks.
   - Pasos: comprobar rama/estado Git; listar archivos; comprobar java -version, docker version/info, docker compose version, git --version y claude --version; identificar SO/arquitectura/CPU/RAM; registrar faltantes.
   - Artefactos: inventario breve en BACKLOG (evidencia), sin volcar logs.
-  - Prueba: comandos anteriores ejecutados; resultado por herramienta registrado.
+  - Prueba: inventario remoto completado mediante GitHub API; comprobación local de Java/Docker/CPU/RAM pendiente. No marcar DONE hasta completar la inspección local.
 - [ ] B00.2 Verificar coherencia PRD: messageId string `runId-sequence`; tiempos UTC en mensajes y monotónicos en medición; diferencia entre procesamiento y end-to-end.
   - Pasos: contrastar esquemas entrada/salida/DLT; comprobar reglas EOS/at-least-once; confirmar fórmulas, escenarios y variables; corregir contradicciones en PRD antes del código.
   - Artefactos: PRD corregido solo si existe contradicción real.
