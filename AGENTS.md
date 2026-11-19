@@ -35,6 +35,14 @@ Esta regla es prioritaria y no se puede omitir:
 - Cada extracción/refactor debe preservar contratos funcionales, semántica de entrega Kafka y métricas; añadir pruebas de caracterización/contrato antes o junto al cambio.
 - En el resumen de cada tarea, indicar decisiones SOLID relevantes, excepciones justificadas y pruebas ejecutadas. No declarar cumplimiento global sin auditoría y evidencias.
 
+## Regla obligatoria: condiciones de control con nombres claros
+- Toda condición de un `if` debe expresar su intención de forma clara y legible, como una frase de negocio o una comprobación concreta.
+- Cuando una condición combine varias comprobaciones, tenga lógica no trivial o represente una regla de negocio, extraerla a una variable booleana con nombre descriptivo o a un método predicado cuyo nombre explique qué se está comprobando (por ejemplo, `isEligibleForRetry`, `hasValidPayload`).
+- Evitar condiciones largas, anidadas, abreviaturas ambiguas y negaciones difíciles de seguir. Preferir nombres positivos y dividir reglas complejas en predicados pequeños.
+- No crear variables o métodos innecesarios para comprobaciones simples y evidentes (por ejemplo, `if (count == 0)`); la claridad prevalece sobre la extracción mecánica.
+- Aplicar la misma convención a `while`, operadores ternarios y expresiones booleanas relevantes cuando mejore su comprensión.
+- Los nombres deben describir qué significa la condición, no repetir literalmente su implementación (evitar nombres como `check1`, `condition` o `isTrue`).
+
 ## Regla obligatoria: anotaciones Lombok y Spring
 Aplicar estas convenciones al código Java nuevo y al que se modifique:
 - Usar Lombok para boilerplate cuando reduzca código sin ocultar lógica: `@RequiredArgsConstructor` para constructor injection y `@Slf4j` para logging.
