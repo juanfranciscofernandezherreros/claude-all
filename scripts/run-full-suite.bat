@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0.."
 if not exist "benchmark-results" mkdir "benchmark-results"
-icacls "benchmark-results" /grant "*S-1-1-0:(OI)(CI)M" /T >nul 2>&1
+icacls "benchmark-results" /grant "%USERDOMAIN%\%USERNAME%:(OI)(CI)M" /T >nul 2>&1
 set "BASH="
 where bash >nul 2>&1
 if not errorlevel 1 set "BASH=bash"
@@ -11,5 +11,5 @@ if not defined BASH (
   echo ERROR: Git Bash is required. Install Git for Windows.
   exit /b 1
 )
-%BASH% "%~dp0run-full-suite.sh" %*
+"%BASH%" "%~dp0run-full-suite.sh" %*
 exit /b %ERRORLEVEL%
