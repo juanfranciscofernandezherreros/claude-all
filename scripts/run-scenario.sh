@@ -18,7 +18,7 @@ for attempt in $(seq 1 60); do
   sleep 2
 done
 docker compose exec -T app java -version >/dev/null 2>&1 || { echo "ERROR: application container did not start." >&2; exit 1; }
-java_version=$(docker compose exec -T app java -version 2>&1 | head -1)
+java_version=$(docker compose exec -T app java -version 2>&1 | sed -n '1p')
 docker_version=$(docker version --format '{{.Server.Version}}')
 warmup="warmup-${name}-$(date +%s)-$$"
 mkdir -p "$results/$warmup"
