@@ -3,6 +3,7 @@ package com.kafkalab.consumer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafkalab.config.LabProperties;
+import com.kafkalab.exception.InvalidInputMessageException;
 import com.kafkalab.metrics.LabMetrics;
 import com.kafkalab.model.DltMessage;
 import com.kafkalab.model.InputMessage;
@@ -61,7 +62,7 @@ public class InputMessageListener {
         final OutputMessage output;
         try {
             output = processor.process(input);
-        } catch (IllegalArgumentException e) {
+        } catch (InvalidInputMessageException e) {
             publishDlt(raw, e, record, consumer, acknowledgment);
             metrics.failed();
             metrics.stopProcessing(processingSample);
