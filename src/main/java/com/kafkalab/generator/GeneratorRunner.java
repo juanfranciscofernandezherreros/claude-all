@@ -52,25 +52,33 @@ public class GeneratorRunner implements ApplicationRunner {
                     long blockStride = (long) properties.generatorThreads() * properties.batchSize();
                     for (long blockStart = (long) workerId * properties.batchSize() + 1; blockStart <= count; blockStart += blockStride) {
                         long blockEnd = Math.min(count, blockStart + properties.batchSize() - 1);
+                        List<String> records = new ArrayList<>((int) (blockEnd - blockStart + 1));
                         for (long sequence = blockStart; sequence <= blockEnd; sequence++) {
-                            try {
-                                InputMessage message = new InputMessage(1, ids.create(runId, sequence), Instant.now(),
-                                        "BENCHMARK", new InputMessage.Payload(sequence, payload));
-                                String json = mapper.writeValueAsString(message);
-                                if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
-                                    kafka.executeInTransaction(operations -> {
-                                        try { operations.send(properties.inputTopic(), message.messageId(), json).get(60, TimeUnit.SECONDS); }
-                                        catch (Exception e) { throw new CompletionException(e); }
-                                        return true;
-                                    });
-                                } else {
-                                    kafka.send(properties.inputTopic(), message.messageId(), json).get(60, TimeUnit.SECONDS);
+                            InputMessage message = new InputMessage(1, ids.create(runId, sequence), Instant.now(),
+                                    "BENCHMARK", new InputMessage.Payload(sequence, payload));
+                            records.add(mapper.writeValueAsString(message));
+                        }
+                        List<Future<?>> acknowledgements = new ArrayList<>(records.size());
+                        if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
+                            kafka.executeInTransaction(operations -> {
+                                List<Future<?>> transactionAcks = new ArrayList<>(records.size());
+                                for (int i = 0; i < records.size(); i++) {
+                                    long sequence = blockStart + i;
+                                    transactionAcks.add(operations.send(properties.inputTopic(), ids.create(runId, sequence), records.get(i)));
                                 }
-                                long n = completed.incrementAndGet();
-                                if (n % 10_000 == 0) System.out.printf("published=%d/%d%n", n, count);
-                            } catch (Exception e) {
-                                throw new CompletionException(e);
+                                awaitAcknowledgements(transactionAcks);
+                                return true;
+                            });
+                        } else {
+                            for (int i = 0; i < records.size(); i++) {
+                                long sequence = blockStart + i;
+                                acknowledgements.add(kafka.send(properties.inputTopic(), ids.create(runId, sequence), records.get(i)));
                             }
+                            awaitAcknowledgements(acknowledgements);
+                        }
+                        long n = completed.addAndGet(records.size());
+                        if (n / 10_000 > (n - records.size()) / 10_000) {
+                            System.out.printf("published=%d/%d%n", n, count);
                         }
                     }
                 }));
@@ -81,6 +89,16 @@ public class GeneratorRunner implements ApplicationRunner {
             System.out.printf("{\"runId\":\"%s\",\"published\":%d,\"publishStartEpochMs\":%d,\"publishSeconds\":%.6f}%n", runId, completed.get(), publishStartEpochMs, seconds);
         } finally {
             pool.shutdownNow();
+        }
+    }
+
+    private static void awaitAcknowledgements(List<Future<?>> acknowledgements) {
+        for (Future<?> acknowledgement : acknowledgements) {
+            try {
+                acknowledgement.get(60, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                throw new CompletionException("Kafka did not acknowledge a generated batch", e);
+            }
         }
     }
 
