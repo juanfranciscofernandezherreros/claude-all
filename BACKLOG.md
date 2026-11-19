@@ -245,7 +245,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: consultar métricas JVM/Prometheus y Docker stats; muestrear durante ejecución; registrar promedio/máximo; si no hay permiso, guardar unavailable + motivo.
   - Artefactos: environment.json y summary.json.
   - Prueba: campos presentes con valor o motivo explícito; no usar cero para dato desconocido.
-- [ ] B09.6 **BLOCKED — stress runner no implementado.**
+- [x] B09.6 **DONE — pendiente de ejecutar stress en hardware objetivo.** `run-stress.sh` ejecuta escenario configurable con defaults 5M mensajes, concurrencia 20, 100 KiB, HEAVY, EXACTLY_ONCE, warm-up 10k y tres repeticiones; `--dry-run` valida parámetros sin lanzar carga (`a752554`, CI `6cd067a`). Launcher Windows añadido (`3e3050e`).
   - Pasos: aumentar en 100k; validar cada paso; mantener histórico; detener ante error >0, lag creciente 3 pasos o memoria >85%, o al llegar a 5M.
   - Artefactos: stress runner y resultados por escalón.
   - Prueba: tests unitarios de cada condición de parada.
@@ -257,7 +257,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B10 — Experiencia Windows/Linux, documentación y cierre
 **Depende:** B02, B09.
-- [x] B10.1 **DONE — pendiente de prueba Windows.** Pares `.bat`/`.sh` creados; launchers Windows ahora preparan permisos de escritura del directorio `benchmark-results` mediante ACL antes de arrancar Compose (`8f2a476`, `05df37f`, `6f2e8a3`, `bb40713`). Pendiente ejecutar en Windows real.
+- [x] B10.1 **DONE — pendiente de prueba Windows.** Pares `.bat`/`.sh` creados; launchers Windows ahora preparan permisos de escritura del directorio `benchmark-results` mediante ACL antes de arrancar Compose; añadido `scripts\\run-stress.bat` (`3e3050e`) (`8f2a476`, `05df37f`, `6f2e8a3`, `bb40713`). Pendiente ejecutar en Windows real.
   - Pasos: crear pares .bat/.sh; validar argumentos; cambiar al directorio raíz; propagar exit codes; imprimir ayuda breve; scripts idempotentes.
   - Artefactos: scripts/ y launchers raíz.
   - Prueba: invocar ayuda, start/stop y benchmark smoke desde Windows y shell cuando disponibles.
