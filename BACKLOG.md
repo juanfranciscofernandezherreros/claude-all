@@ -229,10 +229,10 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: generar runId nuevo por repetición; evitar borrar topics compartidos/volúmenes; filtrar por runId o recrear topics dedicados de forma controlada; ejecutar warm-up no medido; ejecutar 3 repeticiones secuenciales.
   - Artefactos: BenchmarkRunner y manifiesto de ejecución.
   - Prueba: runIds únicos, warm-up excluido y tres resultados independientes.
-- [x] B09.2 **DONE — pendiente de CI.** Publish timing, end-to-end latency y throughput usan duración entre `publishStartEpochMs` y timestamp de validación; throughput usa outputs únicos validados. Funciones puras extraídas a `benchmark_math.py` y consumidas por `run-scenario.sh` (`ca89fdd8`, `1b2a0fbb`).
+- [x] B09.2 **DONE — pendiente de CI.** Publish timing, end-to-end latency y throughput usan duración entre `publishStartEpochMs` y timestamp de validación; throughput usa outputs únicos validados. Funciones puras extraídas a `benchmark_math.py` y consumidas por `run-scenario.sh` (`ca89fdd8`, `1b2a0fbb`); percentile nearest-rank extraído a `LatencyStatistics` y usado por `ValidationRunner` (`f043f357`, `f6543ef6`).
   - Pasos: capturar nanoTime al inicio/fin de cada etapa; guardar timestamps de mensaje UTC; calcular fórmulas PRD; calcular throughput después de validation PASS; informar percentiles y unidades.
   - Artefactos: BenchmarkMetrics y cálculo estadístico.
-  - Prueba: `test_benchmark_math.py` verifica epoch ms→s, throughput, duración cero, valores negativos y monotonicidad (`11b8d13a`).
+  - Prueba: `test_benchmark_math.py` verifica epoch ms→s, throughput, duración cero, negativos y monotonicidad (`11b8d13a`); `LatencyStatisticsTest` verifica p50/p95/p99, límites y entradas inválidas (`63ee2227`).
 - [x] B09.3 **DONE.** `run-full-suite.sh --dry-run` emite JSON de matriz: suite principal 1M, concurrencias 1/2/5/10/20, warm-up 10k, 3 repeticiones; payload 1/5/10/50/100 KiB; workloads LIGHT/MEDIUM/HEAVY; delivery AT_LEAST_ONCE/EXACTLY_ONCE; suites secundarias 100k, concurrencia 5. CI `44528732172` ejecutó `run-full-suite.sh --dry-run` y validó todos los valores de la matriz (`4fe77be`, `afdedeef`).
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
