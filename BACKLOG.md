@@ -53,19 +53,19 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B01 — Proyecto y configuración
 **Depende:** B00.
-- [ ] B01.1 **DONE — pendiente de verificación.**
+- [x] B01.1 **DONE — pendiente de verificación.**
   - Pasos: usar parent/BOM Spring Boot; incluir starter web, kafka, actuator, validation, micrometer-registry-prometheus, Jackson, test starter y Testcontainers Kafka; fijar plugin compiler/surefire; evitar dependencias redundantes.
   - Artefactos: pom.xml.
   - Prueba: mvn dependency:tree sin conflictos; compiler release 21.
-- [ ] B01.2 **DONE — pendiente de verificación.**
+- [x] B01.2 **DONE — pendiente de verificación.**
   - Pasos: generar wrapper oficial; comprobar scripts Unix/Windows y wrapper jar/properties; crear clase main Spring Boot y contexto mínimo.
   - Artefactos: mvnw, mvnw.cmd, .mvn/wrapper/*, clase de arranque.
   - Prueba: ./mvnw -version, mvnw.cmd -version y clean package.
-- [ ] B01.3 **DONE — pendiente de verificación.**
+- [x] B01.3 **DONE — pendiente de verificación.**
   - Pasos: agrupar propiedades kafka/app/benchmark/metrics; mapear cada variable PRD (incluidos BATCH_SIZE y PRODUCER_BATCH_BYTES); validar enum/rango/positividad; no registrar secretos; documentar defaults.
   - Artefactos: application.yml, clases @ConfigurationProperties y tests.
   - Prueba: contexto arranca con defaults; valores inválidos impiden arrancar con mensaje accionable.
-- [ ] B01.4 **DONE — parcial; falta documentación completa en README.**
+- [x] B01.4 **DONE — parcial; falta documentación completa en README.**
   - Pasos: listar variable, default, rango, unidad y efecto; mantener Compose y Spring con nombres idénticos; no incluir credenciales reales.
   - Artefactos: .env.example y tabla de variables en README.
   - Prueba: Compose interpola el ejemplo y app arranca con configuración por defecto.
@@ -73,23 +73,23 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B02 — Kafka local reproducible
 **Depende:** B01.
-- [ ] B02.1 **DONE — pendiente de build Docker.**
+- [x] B02.1 **DONE — pendiente de build Docker.**
   - Pasos: etapa build con JDK 21 y Maven Wrapper; etapa runtime JRE 21 no-root; copiar solo artefacto; healthcheck app si procede; fijar imagen base.
   - Artefactos: Dockerfile y .dockerignore.
   - Prueba: docker build finaliza y contenedor arranca con usuario no-root.
-- [ ] B02.2 **DONE — pendiente de docker compose config y smoke.**
+- [x] B02.2 **DONE — pendiente de docker compose config y smoke.**
   - Pasos: configurar node.id/roles/controller quorum/listeners/advertised listeners; definir red, volumen, restart policy, límites razonables y puertos; nunca latest.
   - Artefactos: compose.yaml y configuración Kafka.
   - Prueba: docker compose config válida; cliente desde host y contenedor resuelve listeners correctos.
-- [ ] B02.3 **DONE — healthcheck configurado; pendiente prueba de fallo.**
+- [x] B02.3 **DONE — healthcheck configurado; pendiente prueba de fallo.**
   - Pasos: usar comando kafka-broker-api-versions o equivalente incluido en imagen; definir interval/timeout/retries/start_period; app depende de service_healthy.
   - Artefactos: healthcheck y depend_on en compose.
   - Prueba: arranque frío pasa de starting a healthy; detener broker provoca unhealthy.
-- [ ] B02.4 **DONE — creación declarativa de topics; pendiente comprobar idempotencia/configuración.**
+- [x] B02.4 **DONE — creación declarativa de topics; pendiente comprobar idempotencia/configuración.**
   - Pasos: script/init container espera broker; crea topics con nombres exactos; si ya existen, valida configuración y no falla; definir retención para suite.
   - Artefactos: init script/servicio y definición de topics.
   - Prueba: dos arranques seguidos sin error; describe topics confirma particiones/replication factor.
-- [ ] B02.5 **DONE — provisioning creado; pendiente validar Prometheus/Grafana.**
+- [x] B02.5 **DONE — provisioning creado; pendiente validar Prometheus/Grafana.**
   - Pasos: crear prometheus.yml scrape app; datasource provisioning; dashboard provisioning; credenciales locales no sensibles y documentadas.
   - Artefactos: monitoring/prometheus/* y monitoring/grafana/provisioning/*.
   - Prueba: targets Prometheus UP; dashboard visible tras arrancar Compose.
@@ -97,15 +97,15 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B03 — Contrato de dominio
 **Depende:** B01.
-- [ ] B03.1 **DONE — pendiente de pruebas de contrato completas.**
+- [x] B03.1 **DONE — pendiente de pruebas de contrato completas.**
   - Pasos: declarar campos/tipos exactos del PRD; Bean Validation para null/vacíos/rangos; UTC ISO-8601; schemaVersion=1; preservar entrada original en DLT.
   - Artefactos: model/InputMessage, OutputMessage, DltMessage y tests.
   - Prueba: serialización JSON golden tests y rechazo de cada campo obligatorio inválido.
-- [ ] B03.2 **DONE — tests escritos; pendientes de ejecución.**
+- [x] B03.2 **DONE — tests escritos; pendientes de ejecución.**
   - Pasos: generar UUID por run; construir ID con secuencia decimal estable; checksum bytes UTF-8 en hexadecimal; evitar dependencia del reloj.
   - Artefactos: RunIdProvider, MessageIdFactory, ChecksumService.
   - Prueba: vectores SHA-256 conocidos; misma entrada produce mismo ID/checksum; secuencias no colisionan.
-- [ ] B03.3 **DONE — test escrito; pendiente de ejecución y medición.**
+- [x] B03.3 **DONE — test escrito; pendiente de ejecución y medición.**
   - Pasos: parsear enum; aplicar exactamente N rondas sobre bytes de resultado anterior; evitar optimización que elimine trabajo; no introducir pausas.
   - Artefactos: WorkloadProcessor y tests.
   - Prueba: outputs deterministas y coste creciente comprobable sin exigir tiempos absolutos.
@@ -117,11 +117,11 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B04 — Productor y generador
 **Depende:** B02, B03.
-- [ ] B04.1 **DONE — configuración escrita; pendiente inspección efectiva/publicación.**
+- [x] B04.1 **DONE — configuración escrita; pendiente inspección efectiva/publicación.**
   - Pasos: definir bootstrap según entorno; key=messageId; serializer JSON; acks all; enable.idempotence true; retries compatibles; batch.size=PRODUCER_BATCH_BYTES; linger/compression externos.
   - Artefactos: KafkaProducerConfig y propiedades.
   - Prueba: inspeccionar configuración efectiva y publicar/leer mensaje de prueba.
-- [ ] B04.2 **DONE — generador escrito; pendiente prueba 10k y auditoría de batching.**
+- [x] B04.2 **DONE — generador escrito; pendiente prueba 10k y auditoría de batching.**
   - Pasos: validar argumentos; crear runId; generar secuencias 1..N sin duplicar; construir payload con bytes exactos; agrupar envío en bloques de BATCH_SIZE registros; distribuir envío entre threads; usar callbacks/acks.
   - Artefactos: generator CLI, payload factory y documentación de flags.
   - Prueba: generar 10.000; contar IDs distintos y comprobar payload bytes y secuencia continua.
@@ -137,19 +137,19 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B05 — Consumer, transformación y errores
 **Depende:** B02, B03, B04.
-- [ ] B05.1 **DONE — listener y propiedades configurados; pendiente smoke de offsets.**
+- [x] B05.1 **DONE — listener y propiedades configurados; pendiente smoke de offsets.**
   - Pasos: suscribir input-topic; group.id fijo; concurrency validada; max.poll.records=BATCH_SIZE; desactivar auto-commit; configurar deserialización segura.
   - Artefactos: KafkaConsumerConfig y listener.
   - Prueba: enviar lote y confirmar recepción; reiniciar y comprobar offsets gestionados por aplicación.
-- [ ] B05.2 **DONE — flujo implementado; pendiente prueba N entradas/N salidas.**
+- [x] B05.2 **DONE — flujo implementado; pendiente prueba N entradas/N salidas.**
   - Pasos: validar DTO; medir inicio/fin; invocar workload; construir salida; publicar con key=messageId; esperar ACK antes de permitir commit.
   - Artefactos: MessageProcessor, OutputPublisher y listener.
   - Prueba: N entradas válidas producen N salidas con mismo ID/sequence y checksum esperado.
-- [ ] B05.3 **DONE — retry/backoff y confirmación implementados; pendiente prueba de fallos.**
+- [x] B05.3 **DONE — retry/backoff y confirmación implementados; pendiente prueba de fallos.**
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
-- [ ] B05.4 **DONE — DLT de validación implementada; pendiente pruebas corrupto/campos inválidos.**
+- [x] B05.4 **DONE — DLT de validación implementada; pendiente pruebas corrupto/campos inválidos.**
   - Pasos: clasificar errores permanentes vs transitorios; serializar original crudo si JSON inválido; truncar stack/message de error para no inflar DLT; publicar DLT con ACK.
   - Artefactos: DltPublisher y modelo DLT.
   - Prueba: JSON malformado y campo inválido aparecen una sola vez en DLT; no producen output normal.
@@ -161,15 +161,15 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B06 — EXACTLY_ONCE y resiliencia
 **Depende:** B05.
-- [ ] B06.1 **DONE — productor transaccional configurado; pendiente prueba de dos instancias.**
+- [x] B06.1 **DONE — productor transaccional configurado; pendiente prueba de dos instancias.**
   - Pasos: prefijo transaccional por instancia; producer factory transaccional; aislamiento read_committed en validadores/consumidores; evitar IDs transaccionales duplicados.
   - Artefactos: TransactionConfig y perfiles de entrega.
   - Prueba: dos instancias obtienen transactional IDs distintos y consumidores no ven registros abortados.
-- [ ] B06.2 **DONE — transacción salida+offset implementada; pendiente verificación de API/rollback.**
+- [x] B06.2 **DONE — transacción salida+offset implementada; pendiente verificación de API/rollback.**
   - Pasos: iniciar transacción; enviar salida; enviar offsets del consumer group a transacción; commit; ante excepción abortar; no hacer commit manual fuera de transacción.
   - Artefactos: TransactionalMessageHandler.
   - Prueba: salida y offset avanzan juntos o ninguno avanza.
-- [ ] B06.3 **DONE — test de atomicidad escrito; pendiente ejecución y ampliar abort/restart.**
+- [x] B06.3 **DONE — test de atomicidad escrito; pendiente ejecución y ampliar abort/restart.**
   - Pasos: caso éxito; fallo antes del commit; caída/reinicio; lectura con read_committed y read_uncommitted para demostrar diferencia.
   - Artefactos: tests Testcontainers.
   - Prueba: registros abortados invisibles en read_committed y offsets coherentes.
@@ -181,15 +181,15 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B07 — Métricas y dashboard
 **Depende:** B04, B05.
-- [ ] B07.1 **DONE — contadores/timers implementados; pendiente test y verificar retry.**
+- [x] B07.1 **DONE — contadores/timers implementados; pendiente test y verificar retry.**
   - Pasos: crear counters para entradas/salidas/fallos/retries/DLT; timers para processing/publish/e2e; histogramas con percentiles; nombres estables.
   - Artefactos: MetricsService y configuración Micrometer.
   - Prueba: tests de incrementos/timers y percentiles disponibles.
-- [ ] B07.2 **DONE — Actuator/Prometheus configurados; pendiente GET real y revisión cardinalidad.**
+- [x] B07.2 **DONE — Actuator/Prometheus configurados; pendiente GET real y revisión cardinalidad.**
   - Pasos: habilitar health/info/prometheus; restringir endpoints expuestos; revisar tags para cardinalidad; nunca incluir messageId/runId como labels.
   - Artefactos: application.yml y métricas.
   - Prueba: GET /actuator/health UP y /actuator/prometheus contiene series esperadas.
-- [ ] B07.3 **DONE — datasource/dashboard provisionados; pendiente smoke de Grafana.**
+- [x] B07.3 **DONE — datasource/dashboard provisionados; pendiente smoke de Grafana.**
   - Pasos: definir scrape interval; datasource Prometheus; paneles throughput, p50/p95/p99, error, DLT, lag, heap y GC; variables básicas de filtro.
   - Artefactos: YAML provisioning y JSON dashboard.
   - Prueba: dashboard se carga y muestra series tras ejecutar un smoke test.
@@ -197,7 +197,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B08 — Validador independiente
 **Depende:** B04, B05.
-- [ ] B08.1 **DONE — validador independiente y snapshot de offsets implementados; pendiente e2e.**
+- [x] B08.1 **DONE — validador independiente y snapshot de offsets implementados; pendiente e2e.**
   - Pasos: leer desde beginning para runId; determinar límites/end offsets; recorrer particiones hasta capturar todos los registros del run; excluir transacciones abortadas en EOS.
   - Artefactos: ValidationRunner y Kafka reader independiente.
   - Prueba: validador termina cuando alcanza los offsets objetivo y no depende de contadores internos del consumer.
@@ -205,7 +205,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: obtener rango esperado 1..N; almacenar IDs vistos en estructura acotada/disco; contar ocurrencias; verificar schema/checksum/sequence; agregar DLT y fallidos.
   - Artefactos: ValidationReport y almacenamiento temporal limpiable.
   - Prueba: dataset sintético detecta missing, duplicate, unexpected, corrupto y DLT por separado.
-- [ ] B08.3 **DONE — validation.json y fallo de proceso implementados; pendiente ejecución.**
+- [x] B08.3 **DONE — validation.json y fallo de proceso implementados; pendiente ejecución.**
   - Pasos: incluir expected/valid/failed/DLT/missing/duplicate/unexpected/invalid; incluir runId y timestamp; definir exit 0 solo si criterios PRD pasan.
   - Artefactos: validation.json y CLI validate.
   - Prueba: caso íntegro exit 0; cada anomalía exit no cero.
@@ -221,7 +221,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: generar runId nuevo por repetición; evitar borrar topics compartidos/volúmenes; filtrar por runId o recrear topics dedicados de forma controlada; ejecutar warm-up no medido; ejecutar 3 repeticiones secuenciales.
   - Artefactos: BenchmarkRunner y manifiesto de ejecución.
   - Prueba: runIds únicos, warm-up excluido y tres resultados independientes.
-- [ ] B09.2 **DONE — publish y percentiles de latencia implementados; pendiente test de fórmulas y precisión monotónica.**
+- [x] B09.2 **DONE — publish y percentiles de latencia implementados; pendiente test de fórmulas y precisión monotónica.**
   - Pasos: capturar nanoTime al inicio/fin de cada etapa; guardar timestamps de mensaje UTC; calcular fórmulas PRD; calcular throughput después de validation PASS; informar percentiles y unidades.
   - Artefactos: BenchmarkMetrics y cálculo estadístico.
   - Prueba: tests con reloj/datos controlados verifican fórmulas y unidades.
@@ -229,7 +229,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
   - Prueba: dry-run imprime escenarios exactos; tests confirman número/valores de casos.
-- [ ] B09.4 **DONE — reportes por run implementados; pendiente verificar los seis artefactos y escritura atómica.**
+- [x] B09.4 **DONE — reportes por run implementados; pendiente verificar los seis artefactos y escritura atómica.**
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
@@ -249,7 +249,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B10 — Experiencia Windows/Linux, documentación y cierre
 **Depende:** B02, B09.
-- [ ] B10.1 **DONE — launchers Windows/shell creados; pendiente prueba en ambos sistemas.**
+- [x] B10.1 **DONE — launchers Windows/shell creados; pendiente prueba en ambos sistemas.**
   - Pasos: crear pares .bat/.sh; validar argumentos; cambiar al directorio raíz; propagar exit codes; imprimir ayuda breve; scripts idempotentes.
   - Artefactos: scripts/ y launchers raíz.
   - Prueba: invocar ayuda, start/stop y benchmark smoke desde Windows y shell cuando disponibles.
