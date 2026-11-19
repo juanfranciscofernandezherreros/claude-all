@@ -85,7 +85,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: etapa build con JDK 21 y Maven Wrapper; etapa runtime JRE 21 no-root; copiar solo artefacto; healthcheck app si procede; fijar imagen base.
   - Artefactos: Dockerfile y .dockerignore.
   - Prueba: docker build finaliza y contenedor arranca con usuario no-root.
-- [x] B02.2 **DONE — pendiente de docker compose config y smoke.**
+- [x] B02.2 **DONE — pendiente de smoke.** CI confirmó `docker compose config --quiet`; Kafka actualizado de 3.9.0 a 3.9.1 en `c882202` porque KAFKA-18281 hacía fallar KRaft con listeners explícitos `0.0.0.0`. PRD/README alineados (`54bdf93`, `7958e99`). Falta arranque real del broker y conectividad host/contenedor.
   - Pasos: configurar node.id/roles/controller quorum/listeners/advertised listeners; definir red, volumen, restart policy, límites razonables y puertos; nunca latest.
   - Artefactos: compose.yaml y configuración Kafka.
   - Prueba: docker compose config válida; cliente desde host y contenedor resuelve listeners correctos.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente de verificación de integración.** CI `bf6acc9` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests ejecutados, 7 pasaron y el test Testcontainers fue omitido por incompatibilidad Docker API (1.32 vs 1.40). `docker compose config --quiet` pasó. Testcontainers 1.21.3 aún falló por API Docker 1.32; versión actualizada a 1.21.4 (`b896007`). Workflow usa actions v5 y registra `docker version` (`d9e1380`). Pendiente CI nueva con test de integración, smoke y benchmark 1M.
+- [x] B10.4 **DONE — pendiente de verificación de integración.** CI `bf6acc9` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests ejecutados, 7 pasaron y el test Testcontainers fue omitido por incompatibilidad Docker API (1.32 vs 1.40). `docker compose config --quiet` pasó. Testcontainers 1.21.4 (`b896007`) ya conecta con Docker API 1.54; CI detectó que Kafka 3.9.0 cae por KAFKA-18281. Broker de Compose y test actualizados a Kafka 3.9.1 (`c882202`, `984f8ed`), PRD/README alineados. Workflow usa actions v5 (`d9e1380`). Pendiente nueva CI con test de integración, smoke y benchmark 1M.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
