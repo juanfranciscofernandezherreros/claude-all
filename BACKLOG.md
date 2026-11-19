@@ -313,6 +313,12 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 **Aceptación final:** PRD Definition of Done satisfecho; instrucciones funcionan desde clon limpio; informe final distingue ejecutado, fallido y bloqueado.
 
+### B11 — Optimización de throughput y comparación de semánticas de entrega
+- [x] B11.1 **DONE — pendiente de verificación CI y ejecución local.** Añadido `scripts/run-delivery-comparison.sh` y launcher Windows. Ejecuta por defecto 1.000.000 de mensajes por modo, tres repeticiones alternadas, misma carga y configuración, warm-up, validación independiente y cálculo de medianas/variación de throughput. Preset inicial: concurrencia 10, LIGHT, payload 1 KiB, batch lógico 1.000, producer batch 128 KiB, LZ4 y linger 5 ms. Commits: `563f229`, `ae85e78`, `3cdf56e`.
+- [x] B11.2 **DONE — pendiente de verificación CI.** Consumer convertido a batch listener; AT_LEAST_ONCE publica en paralelo las salidas/DLT del lote y confirma el ACK del lote tras recibir todos los ACK del broker. EXACTLY_ONCE publica las salidas/DLT y offsets del lote en una transacción Kafka, esperando los ACK antes de incluir offsets. Métricas y tests del listener adaptados. Commits: `361a24f`, `45dd443`, `c55ec59`, `02209ef`.
+- [x] B11.3 **DONE — pendiente de verificación CI.** README/PRD documentan el comando y el contrato de comparación; CI valida el dry-run de la matriz de un millón de mensajes. Commits: `6277c20`, `3c6c3c5`, `b4ff221`.
+- [ ] B11.4 **BLOCKED — benchmark de 1M no ejecutado desde este entorno.** Requiere Docker Engine y recursos del host objetivo. Ejecutar `bash scripts/run-delivery-comparison.sh 1000000 10 3` o `scripts\\run-delivery-comparison.bat 1000000 10 3`; conservar los informes `delivery-1m-*-comparison.md/.json` y verificar que ambos modos obtienen PASS con cero missing, duplicate, unexpected, invalid y DLT. No declarar ganador ni publicar throughput hasta tener esos resultados.
+  
 ## Grafo resumido
 B00 -> B01 -> B02 -> B04 -> B05 -> B06 -> B09 -> B10
 B01 -> B03 -> B04
