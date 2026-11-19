@@ -5,7 +5,6 @@ import com.kafkalab.model.DltMessage;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -14,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.listener.ConsumerRecordRecoverer;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 
@@ -27,7 +27,7 @@ public class KafkaErrorHandlerConfiguration {
         backOff.setMultiplier(2.0);
         backOff.setMaxInterval(10000L);
 
-        BiConsumer<ConsumerRecord<?, ?>, Exception> recoverer;
+        ConsumerRecordRecoverer recoverer;
         boolean exactlyOnce = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
         if (exactlyOnce) {
             recoverer = (record, exception) -> {
