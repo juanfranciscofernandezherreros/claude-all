@@ -24,6 +24,23 @@ jobs:
         run: chmod +x mvnw
       - name: Check shell syntax
         run: bash -n scripts/*.sh
+      - name: Validate benchmark scenario matrix
+        run: |
+          bash scripts/run-full-suite.sh --dry-run > /tmp/benchmark-matrix.json
+          python3 - <<'PY'
+          import json
+          matrix = json.load(open("/tmp/benchmark-matrix.json", encoding="utf-8"))
+          assert matrix["main"]["messages"] == 1_000_000
+          assert matrix["main"]["concurrencies"] == [1, 2, 5, 10, 20]
+          assert matrix["main"]["warmupMessages"] == 10_000
+          assert matrix["main"]["repetitions"] == 3
+          assert [x["payloadBytes"] for x in matrix["payload"]] == [1024, 5120, 10240, 51200, 102400]
+          assert [x["workload"] for x in matrix["workload"]] == ["LIGHT", "MEDIUM", "HEAVY"]
+          assert [x["deliveryMode"] for x in matrix["delivery"]] == ["AT_LEAST_ONCE", "EXACTLY_ONCE"]
+          assert all(x["messages"] == 100_000 and x["concurrency"] == 5 and x["repetitions"] == 3
+                     for key in ("payload", "workload", "delivery") for x in matrix[key])
+          print("Benchmark matrix matches PRD: 5 payload, 3 workload, 2 delivery scenarios.")
+          PY
       - name: Validate Docker Compose
         run: docker compose config --quiet
       - name: Inspect Docker runtime
