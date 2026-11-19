@@ -33,6 +33,7 @@ class DiskChecksumStoreTest {
     void rejectsInvalidSequencesAndChecksumWidths() throws Exception {
         try (DiskChecksumStore store = new DiskChecksumStore(tempDir, 1)) {
             assertThrows(IllegalArgumentException.class, () -> store.writeExpected(0, "00".repeat(32)));
+            assertThrows(IllegalArgumentException.class, () -> store.writeExpected(2, "00".repeat(32)));
             assertThrows(IllegalArgumentException.class, () -> store.writeExpected(1, "00"));
         }
     }
