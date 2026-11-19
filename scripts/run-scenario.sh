@@ -94,14 +94,16 @@ curl -fsS http://localhost:8080/actuator/prometheus > "$prometheus_metrics_file"
 consumer_lag=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group kafka-lab 2>/dev/null | awk 'NR>1 && $6 ~ /^[0-9]+$/ {sum += $6; found=1} END {if (found) print sum; else print ""}' || true)
   "$python_bin" - "$results/$run_id" "$results/results.csv" "$name" "$concurrency" "$messages" "$payload" "$workload" "$delivery" "$java_version" "$docker_version" "$docker_memory_usage" "$prometheus_metrics_file" "$consumer_lag" "$results/$run_id/resource-samples.tsv" <<'PY'
 import json,sys,platform,os,datetime,re
+sys.path.insert(0, 'scripts')
+from benchmark_math import end_to_end_seconds, throughput_per_second
 folder,csv_path,name,concurrency,messages,payload,workload,delivery,java_version,docker_version,docker_memory_usage,prometheus_metrics_file,consumer_lag,samples_path=sys.argv[1:]
 prometheus_metrics=open(prometheus_metrics_file,encoding="utf-8").read() if os.path.isfile(prometheus_metrics_file) else ""
 execution=[x for x in open(folder+"/execution.log",encoding="utf-8") if x.startswith('{"runId"')][-1]
 generated=json.loads(execution)
 validation=json.load(open(folder+"/validation.json",encoding="utf-8"))
 validated_at=datetime.datetime.fromisoformat(validation["timestamp"].replace("Z","+00:00")).timestamp()
-end_to_end=max(0.0,validated_at-generated["publishStartEpochMs"]/1000.0)
-throughput=validation["valid"]/end_to_end if end_to_end else 0
+end_to_end=end_to_end_seconds(generated["publishStartEpochMs"],validated_at)
+throughput=throughput_per_second(validation["valid"],end_to_end)
 def bytes_from_docker_stats(value):
     match=re.match(r"\s*([0-9.]+)\s*([KMGT]?i?B)",value or "")
     if not match: return None
