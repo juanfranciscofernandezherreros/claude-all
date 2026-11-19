@@ -38,7 +38,7 @@ JUnit unit tests: esquema, validación, checksum, errores, configuración. Testc
 Objetivo orientativo, no condición de éxito: end-to-end <60s (~16.667 salidas/s). Informar resultado real y limitaciones de hardware; no falsear PASS si no se ejecutó.
 
 ## 8. Entregables y comandos
-Proyecto Maven con código, Dockerfile, compose.yaml, .env.example, Maven Wrapper, pruebas, scripts y documentación. Scripts: start, stop, benchmark, full-suite, delivery-comparison, validate. Comparación: `bash scripts/run-delivery-comparison.sh 1000000 10 3` (Windows: `scripts\\run-delivery-comparison.bat 1000000 10 3`). Windows: RUN-KAFKA-LAB.bat; shell scripts equivalentes. Comandos estables: mvnw.cmd clean verify; RUN-KAFKA-LAB.bat; scripts/run-benchmark.bat --messages 1000000; scripts/run-full-suite.bat.
+Proyecto Maven con código, Dockerfile, compose.yaml, .env.example, Maven Wrapper, pruebas, scripts y documentación. Scripts: start, stop, benchmark, full-suite, delivery-comparison, validate. Comparación: `bash scripts/run-delivery-comparison.sh 1000000 10 3` (Windows: `scripts\run-delivery-comparison.bat 1000000 10 3`). Windows: RUN-KAFKA-LAB.bat; shell scripts equivalentes. Comandos estables: mvnw.cmd clean verify; RUN-KAFKA-LAB.bat; scripts/run-benchmark.bat --messages 1000000; scripts/run-full-suite.bat.
 Cada run en benchmark-results/<runId>/: summary.json, results.csv, validation.json, environment.json, execution.log, report.md. No versionar resultados temporales grandes; incluir informe agregado y CSV pequeño.
 README: prerequisitos exactos, arranque/parada, comandos Windows/Linux, puertos, variables, troubleshooting, interpretación de métricas y ubicación de informes.
 
