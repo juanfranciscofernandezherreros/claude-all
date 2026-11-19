@@ -137,7 +137,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: mantener contador de futures pendientes; flush al terminar; timeout definido; agregar excepciones; no declarar publicación completa con callbacks pendientes.
   - Artefactos: resultado de generación y logging estructurado.
   - Prueba: simular broker inaccesible y comprobar exit code no cero; caso correcto confirma N ACK.
-- [ ] B04.4 **BLOCKED — faltan pruebas de generación e integración.**
+- [x] B04.4 **DONE — pendiente de CI verde.** El particionado determinista por worker/bloque se extrae a helper probado: N=1 y N=10.000 sin huecos/duplicados con 1/2/5/10/20/64 workers y batch 1/500/1000; payloads 1/5/10/50/100 KiB comprobados (`2003e63d`, `cb90566a`). Testcontainers añade publicación de 10.000 registros con ACK `acks=all`, lectura de los 10.000 y consistencia de partición por clave (`20b733a5`, fix `9522ec9d`).
   - Pasos: testear N=1, N=10k, payloads definidos, threads concurrentes, fallos y particionado por key.
   - Artefactos: tests unitarios e integración.
   - Prueba: ningún ID repetido; particiones reciben claves; payload de longitud solicitada.
