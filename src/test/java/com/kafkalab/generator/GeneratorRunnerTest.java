@@ -65,6 +65,31 @@ class GeneratorRunnerTest {
     }
 
     @Test
+    void failsWhenKafkaBrokerIsUnavailableBeforeGlobalDeadline() {
+        java.util.Properties config = new java.util.Properties();
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:1");
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                org.apache.kafka.common.serialization.StringSerializer.class);
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                org.apache.kafka.common.serialization.StringSerializer.class);
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG, "all");
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.MAX_BLOCK_MS_CONFIG, 250);
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 100);
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 500);
+        config.put(org.apache.kafka.clients.producer.ProducerConfig.RETRIES_CONFIG, 0);
+
+        try (var producer = new org.apache.kafka.clients.producer.KafkaProducer<String, String>(config)) {
+            long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(300);
+            RuntimeException failure = assertThrows(RuntimeException.class, () -> {
+                var acknowledgement = producer.send(
+                        new org.apache.kafka.clients.producer.ProducerRecord<>("unreachable-topic", "key", "value"));
+                GeneratorRunner.awaitAcknowledgements(List.of(acknowledgement), deadline);
+            });
+            assertNotNull(failure.getMessage());
+        }
+    }
+
+    @Test
     void rejectsInvalidBlockAllocationArguments() {
         assertThrows(IllegalArgumentException.class, () -> GeneratorRunner.blockStartsForWorker(-1, 0, 1, 1));
         assertThrows(IllegalArgumentException.class, () -> GeneratorRunner.blockStartsForWorker(10, 1, 1, 1));
