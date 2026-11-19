@@ -1,10 +1,7 @@
 # Kafka Performance Lab
 
-Autonomous Java 21 + Spring Boot + Apache Kafka performance benchmark.
+Windows: run `RUN-KAFKA-LAB.bat`.
 
-## Windows quick start
-Run `RUN-KAFKA-LAB.bat` from this repository. Requires Git, Docker Desktop running and Claude Code CLI installed/authenticated.
+Requires Docker Desktop and authenticated Claude Code CLI. The launcher starts Claude in this repository. Claude reads `PRD.md`, builds the Java app, provisions local Kafka KRaft with Docker Compose, tests, benchmarks 1M messages and saves real reports under `benchmark-results/`.
 
-Claude reads `PRD.md`, implements the application, starts local Kafka KRaft via Docker Compose, runs tests and benchmarks, and saves real results.
-
-See `PRD.md` for the complete specification.
+See `PRD.md` for all requirements.
