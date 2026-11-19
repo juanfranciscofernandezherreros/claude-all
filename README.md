@@ -103,7 +103,7 @@ Cada ejecución medida crea `benchmark-results/<runId>/` con:
 - `summary.json`: configuración, tiempos, throughput validado y latencias.
 - `results.csv`: tabla agregada de escenarios.
 - `validation.json`: integridad independiente (expected, valid, missing, duplicate, unexpected, invalid y DLT).
-- `environment.json`: SO, arquitectura, CPU lógica, Java y Docker; los recursos no capturados aparecen como null con explicación.
+- `environment.json`: SO, arquitectura, CPU lógica, Java, Docker, memoria del contenedor, heap JVM, pausas GC y lag del consumer cuando las métricas están disponibles. Los recursos se capturan como una muestra al final de cada repetición; los valores no disponibles aparecen como null.
 - `execution.log`: salida del generador.
 - `report.md`: resumen legible.
 
