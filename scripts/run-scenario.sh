@@ -24,13 +24,15 @@ curl --fail --silent http://localhost:8080/actuator/health >/dev/null || {
 }
 java_version=$(docker compose exec -T app java -version 2>&1 | sed -n '1p')
 docker_version=$(docker version --format '{{.Server.Version}}')
-warmup="warmup-${name}-$(date +%s)-$$"
+warmup_messages="${WARMUP_MESSAGES:-10000}"
+if [[ ! "$warmup_messages" =~ ^[1-9][0-9]*$ ]]; then echo "ERROR: WARMUP_MESSAGES must be a positive integer." >&2; exit 2; fi
+warmup="warmup-${name}-$(date +%s)-$"
 mkdir -p "$results/$warmup"
 chmod 777 "$results/$warmup"
 echo "Warm-up: $name"
 if ! docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
   --spring.main.web-application-type=none --lab.consumer.enabled=false --generate \
-  --messages=10000 --run-id="$warmup" --timeout-seconds="${GENERATOR_TIMEOUT_SECONDS:-600}" > "$results/$warmup/execution.log" 2>&1; then
+  --messages="$warmup_messages" --run-id="$warmup" --timeout-seconds="${GENERATOR_TIMEOUT_SECONDS:-600}" > "$results/$warmup/execution.log" 2>&1; then
   cat "$results/$warmup/execution.log"
   exit 1
 fi
