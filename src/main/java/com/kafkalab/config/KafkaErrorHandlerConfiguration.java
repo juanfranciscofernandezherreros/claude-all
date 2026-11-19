@@ -6,14 +6,13 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DefaultErrorHandler;
-import org.springframework.kafka.listener.ConsumerRecordRecoverer;
+import org.springframework.kafka.listener.ConsumerAwareRecordRecoverer;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 
@@ -27,10 +26,10 @@ public class KafkaErrorHandlerConfiguration {
         backOff.setMultiplier(2.0);
         backOff.setMaxInterval(10000L);
 
-        ConsumerRecordRecoverer recoverer;
+        ConsumerAwareRecordRecoverer recoverer;
         boolean exactlyOnce = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
         if (exactlyOnce) {
-            recoverer = (record, exception) -> {
+            recoverer = (record, consumer, exception) -> {
                 try {
                     DltMessage dlt = new DltMessage(String.valueOf(record.value()), exception.getClass().getSimpleName(),
                             String.valueOf(exception.getMessage()), Instant.now());
@@ -43,7 +42,7 @@ public class KafkaErrorHandlerConfiguration {
                         }
                         operations.sendOffsetsToTransaction(
                                 Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
-                                new ConsumerGroupMetadata("kafka-lab"));
+                                consumer.groupMetadata());
                         return true;
                     });
                 } catch (Exception e) {
