@@ -28,7 +28,7 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers(disabledWithoutDocker = true)
 class KafkaTransactionIntegrationTest {
     @Container
-    static final KafkaContainer KAFKA = new KafkaContainer(DockerImageName.parse("apache/kafka:3.9.0"))
+    static final KafkaContainer KAFKA = new KafkaContainer(DockerImageName.parse("apache/kafka:3.9.1"))
             .withEnv("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
             .withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
             .withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1");
