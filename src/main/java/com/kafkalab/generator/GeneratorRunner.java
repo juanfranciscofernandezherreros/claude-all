@@ -51,19 +51,20 @@ public class GeneratorRunner implements ApplicationRunner {
                 workers.add(pool.submit(() -> {
                     long blockStride = (long) properties.generatorThreads() * properties.batchSize();
                     for (long blockStart = (long) workerId * properties.batchSize() + 1; blockStart <= count; blockStart += blockStride) {
+                        final long currentBlockStart = blockStart;
                         long blockEnd = Math.min(count, blockStart + properties.batchSize() - 1);
                         List<String> records = new ArrayList<>((int) (blockEnd - blockStart + 1));
                         for (long sequence = blockStart; sequence <= blockEnd; sequence++) {
                             InputMessage message = new InputMessage(1, ids.create(runId, sequence), Instant.now(),
                                     "BENCHMARK", new InputMessage.Payload(sequence, payload));
-                            records.add(mapper.writeValueAsString(message));
+                            records.add(serialize(message));
                         }
                         List<Future<?>> acknowledgements = new ArrayList<>(records.size());
                         if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
                             kafka.executeInTransaction(operations -> {
                                 List<Future<?>> transactionAcks = new ArrayList<>(records.size());
                                 for (int i = 0; i < records.size(); i++) {
-                                    long sequence = blockStart + i;
+                                    long sequence = currentBlockStart + i;
                                     transactionAcks.add(operations.send(properties.inputTopic(), ids.create(runId, sequence), records.get(i)));
                                 }
                                 awaitAcknowledgements(transactionAcks);
@@ -89,6 +90,14 @@ public class GeneratorRunner implements ApplicationRunner {
             System.out.printf("{\"runId\":\"%s\",\"published\":%d,\"publishStartEpochMs\":%d,\"publishSeconds\":%.6f}%n", runId, completed.get(), publishStartEpochMs, seconds);
         } finally {
             pool.shutdownNow();
+        }
+    }
+
+    private String serialize(InputMessage message) {
+        try {
+            return mapper.writeValueAsString(message);
+        } catch (Exception e) {
+            throw new CompletionException("Could not serialize generated message", e);
         }
     }
 
