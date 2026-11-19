@@ -55,7 +55,11 @@ with open(folder+"/report.md","w",encoding="utf-8") as f:
     f.write(f"- Payload: {payload} bytes\n- Workload: {workload}\n- Delivery: {delivery}\n")
     f.write(f"- Publish: {generated['publishSeconds']:.3f}s\n- End-to-end: {end_to_end:.3f}s\n")
     f.write(f"- Validated throughput: {throughput:.1f} messages/s\n- Integrity: {validation['status']}\n")
-with open(csv_path,"a",encoding="utf-8") as f:
+header="scenario,runId,concurrency,messages,payloadBytes,workload,deliveryMode,publishSeconds,throughputPerSecond,status\n"
+if not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0:
+    with open(csv_path,"w",encoding="utf-8",newline="") as f:
+        f.write(header)
+with open(csv_path,"a",encoding="utf-8",newline="") as f:
     f.write(f"{name},{generated['runId']},{concurrency},{messages},{payload},{workload},{delivery},{generated['publishSeconds']},{throughput},{validation['status']}\n")
 PY
 done
