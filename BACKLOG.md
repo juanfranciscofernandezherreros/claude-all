@@ -129,7 +129,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: definir bootstrap según entorno; key=messageId; serializer JSON; acks all; enable.idempotence true; retries compatibles; batch.size=PRODUCER_BATCH_BYTES; linger/compression externos.
   - Artefactos: KafkaProducerConfig y propiedades.
   - Prueba: inspeccionar configuración efectiva y publicar/leer mensaje de prueba.
-- [x] B04.2 **DONE — generador por bloques implementado con envíos asíncronos y espera de ACK por bloque; EXACTLY_ONCE agrupa cada bloque en una transacción. Pendiente prueba 10k y verificación de rendimiento.** Evidencia: commits `c8f47d4`, `3688502`, `4a9381d`; CI anterior detectó y se corrigió el import de `PartitionInfo`; nueva CI pendiente.
+- [x] B04.2 **DONE — pendiente de verificación funcional.** Generador por bloques con envíos asíncronos y ACK por bloque; EXACTLY_ONCE agrupa cada bloque en transacción. CI `bf6acc9` compila el código; faltan prueba 10k, payloads, IDs únicos y rendimiento.
   - Pasos: validar argumentos; crear runId; generar secuencias 1..N sin duplicar; construir payload con bytes exactos; agrupar envío en bloques de BATCH_SIZE registros; distribuir envío entre threads; usar callbacks/acks.
   - Artefactos: generator CLI, payload factory y documentación de flags.
   - Prueba: generar 10.000; contar IDs distintos y comprobar payload bytes y secuencia continua.
@@ -153,7 +153,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: validar DTO; medir inicio/fin; invocar workload; construir salida; publicar con key=messageId; esperar ACK antes de permitir commit.
   - Artefactos: MessageProcessor, OutputPublisher y listener.
   - Prueba: N entradas válidas producen N salidas con mismo ID/sequence y checksum esperado.
-- [x] B05.3 **DONE — retry/backoff y confirmación implementados; corregidos imports/API de backoff y metadata de grupo detectados por CI. Pendiente prueba de fallos y validar la recuperación transaccional.** Evidencia: commit `0f86781`; CI anterior reportó el error de API, nueva ejecución pendiente.
+- [x] B05.3 **DONE — pendiente de verificación funcional.** Backoff/recoverer compilan en CI `bf6acc9`; falta probar reintentos, DLT y offsets en ambos modos. La rama EXACTLY_ONCE del recoverer aún requiere prueba real de grupo.
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
@@ -177,7 +177,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: iniciar transacción; enviar salida; enviar offsets del consumer group a transacción; commit; ante excepción abortar; no hacer commit manual fuera de transacción.
   - Artefactos: TransactionalMessageHandler.
   - Prueba: salida y offset avanzan juntos o ninguno avanza.
-- [x] B06.3 **DONE — test de atomicidad escrito; pendiente ejecución y ampliar abort/restart.**
+- [x] B06.3 **DONE — pendiente de verificación.** Test de atomicidad escrito; en CI `bf6acc9` se omitió porque Testcontainers 1.20.6 negocia Docker API 1.32 y el runner exige 1.40. Se actualizó Testcontainers a 1.21.3 en `cfa156a`; falta confirmar ejecución del contenedor, abort y restart.
   - Pasos: caso éxito; fallo antes del commit; caída/reinicio; lectura con read_committed y read_uncommitted para demostrar diferencia.
   - Artefactos: tests Testcontainers.
   - Prueba: registros abortados invisibles en read_committed y offsets coherentes.
@@ -233,7 +233,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: capturar nanoTime al inicio/fin de cada etapa; guardar timestamps de mensaje UTC; calcular fórmulas PRD; calcular throughput después de validation PASS; informar percentiles y unidades.
   - Artefactos: BenchmarkMetrics y cálculo estadístico.
   - Prueba: tests con reloj/datos controlados verifican fórmulas y unidades.
-- [ ] B09.3 **BLOCKED — suite principal parcial; --full-suite no implementa matriz secundaria.**
+- [ ] B09.3 **BLOCKED — falta contrastar la matriz secundaria implementada en scripts con los escenarios exactos del PRD y ejecutar dry-run/pruebas de casos.**
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
   - Prueba: dry-run imprime escenarios exactos; tests confirman número/valores de casos.
@@ -261,7 +261,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: crear pares .bat/.sh; validar argumentos; cambiar al directorio raíz; propagar exit codes; imprimir ayuda breve; scripts idempotentes.
   - Artefactos: scripts/ y launchers raíz.
   - Prueba: invocar ayuda, start/stop y benchmark smoke desde Windows y shell cuando disponibles.
-- [ ] B10.2 **BLOCKED — launcher arranca Docker y benchmark; no verifica Git/Claude ni muestra advertencia de permisos.**
+- [ ] B10.2 **BLOCKED — el launcher arranca Docker y benchmark sin Claude; falta alinear los pasos de aceptación del backlog con el launcher autónomo y validar rutas/errores en Windows. No debe añadirse ejecución con permisos peligrosos.**
   - Pasos: comprobar comandos; localizar Docker Desktop; iniciar si detenido; esperar máximo 120s; verificar PRD/BACKLOG; ejecutar Claude con instrucciones mínimas; preservar exit code y pausar solo al final.
   - Artefactos: RUN-KAFKA-LAB.bat.
   - Prueba: revisar rutas con espacios, Docker detenido/activo/no instalado y Claude ausente; no ejecutar permisos peligrosos sin advertencia visible.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [ ] B10.4 **BLOCKED — CI configurada. Ejecución #62 falló en compilación Java por API/imports (backoff, ConsumerGroupMetadata y PartitionInfo); correcciones publicadas en `0f86781`, `4a9381d` y `78cdcdb`; pendiente confirmar nueva CI y después Docker/smoke/1M.**
+- [x] B10.4 **DONE — pendiente de verificación de integración.** CI `bf6acc9` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests ejecutados, 7 pasaron y el test Testcontainers fue omitido por incompatibilidad Docker API (1.32 vs 1.40). `docker compose config --quiet` pasó. Testcontainers actualizado a 1.21.3 (`cfa156a`); workflow actualizado a actions v5 y añade `docker version` (`d9e1380`). Pendiente CI nueva con test de integración, smoke y benchmark 1M.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
