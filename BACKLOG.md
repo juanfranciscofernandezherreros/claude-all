@@ -145,11 +145,11 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B05 — Consumer, transformación y errores
 **Depende:** B02, B03, B04.
-- [x] B05.1 **DONE — pendiente de CI para los nuevos tests unitarios.** Listener `@KafkaListener`, manual ack y commit transaccional; test unitario añadido para verificar output válido y ACK posterior (`63377dc`); smoke CI 100 mensajes PASS en `44528276019`.
+- [x] B05.1 **DONE.** Listener `@KafkaListener`, manual ack y commit transaccional implementados; test unitario verifica output válido y ACK posterior (`63377dc`); CI `44529574468` `clean verify` pasó y smoke e2e 100 mensajes PASS (`44528276019`).
   - Pasos: suscribir input-topic; group.id fijo; concurrency validada; max.poll.records=BATCH_SIZE; desactivar auto-commit; configurar deserialización segura.
   - Artefactos: KafkaConsumerConfig y listener.
   - Prueba: enviar lote y confirmar recepción; reiniciar y comprobar offsets gestionados por aplicación.
-- [x] B05.2 **DONE — pendiente de carga 10k/1M.** Procesamiento genera un output con messageId, sequence y checksum; test unitario valida output para entrada válida (`63377dc`) y smoke e2e 100 mensajes PASS (`44528276019`).
+- [x] B05.2 **DONE — pendiente de carga 10k/1M.** Procesamiento genera un output por input válido con messageId, sequence y checksum; test unitario valida output (`63377dc`) y smoke e2e 100 mensajes PASS (`44528276019`).
   - Pasos: validar DTO; medir inicio/fin; invocar workload; construir salida; publicar con key=messageId; esperar ACK antes de permitir commit.
   - Artefactos: MessageProcessor, OutputPublisher y listener.
   - Prueba: N entradas válidas producen N salidas con mismo ID/sequence y checksum esperado.
@@ -157,7 +157,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
-- [ ] B05.4 **BLOCKED — cobertura parcial; faltan tests para schemaVersion, eventType, tamaño y secuencia inválidos.** Test unitario añadido: JSON malformado se publica en DLT antes de ACK y se comprueba `errorType`/payload (`63377dc`). Pendientes tests para schemaVersion, eventType, tamaño y secuencia inválidos.
+- [ ] B05.4 **BLOCKED — cobertura parcial; faltan tests para schemaVersion, eventType, tamaño y secuencia inválidos.** Test malformed JSON confirma publicación DLT antes del ACK y payload/errorType (`63377dc`); CI `44529574468` pasó.
   - Pasos: clasificar errores permanentes vs transitorios; serializar original crudo si JSON inválido; truncar stack/message de error para no inflar DLT; publicar DLT con ACK.
   - Artefactos: DltPublisher y modelo DLT.
   - Prueba: JSON malformado y campo inválido aparecen una sola vez en DLT; no producen output normal.
