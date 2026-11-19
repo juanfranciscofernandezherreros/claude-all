@@ -88,4 +88,39 @@ class InputMessageListenerTest {
         assertEquals(new ChecksumService().sha256(payload), output.result().checksum());
         verify(acknowledgment).acknowledge();
     }
+    @Test
+    void unsupportedSchemaAndEventTypeAreDeadLettered() throws Exception {
+        InputMessage invalid = new InputMessage(2, "run-2", Instant.now(), "UNKNOWN",
+                new InputMessage.Payload(2, "x".repeat(1024)));
+        DltMessage dlt = publishAndCaptureDlt(invalid, 1L);
+        assertEquals("IllegalArgumentException", dlt.errorType());
+        assertTrue(dlt.errorMessage().contains("Unsupported schemaVersion or eventType"));
+    }
+
+    @Test
+    void wrongPayloadSizeIsDeadLettered() throws Exception {
+        InputMessage invalid = new InputMessage(1, "run-3", Instant.now(), "BENCHMARK",
+                new InputMessage.Payload(3, "short"));
+        DltMessage dlt = publishAndCaptureDlt(invalid, 2L);
+        assertEquals("IllegalArgumentException", dlt.errorType());
+    }
+
+    @Test
+    void messageIdSequenceMismatchIsDeadLettered() throws Exception {
+        InputMessage invalid = new InputMessage(1, "run-4-99", Instant.now(), "BENCHMARK",
+                new InputMessage.Payload(4, "x".repeat(1024)));
+        DltMessage dlt = publishAndCaptureDlt(invalid, 3L);
+        assertEquals("IllegalArgumentException", dlt.errorType());
+    }
+
+    private DltMessage publishAndCaptureDlt(InputMessage invalid, long offset) throws Exception {
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("input-topic", 0, offset,
+                invalid.messageId(), mapper.writeValueAsString(invalid));
+        listener.onMessage(record, acknowledgment, consumer);
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(publisher).publish(eq("dlt-topic"), startsWith("invalid-"), json.capture());
+        verify(acknowledgment).acknowledge();
+        return mapper.readValue(json.getValue(), DltMessage.class);
+    }
+
 }
