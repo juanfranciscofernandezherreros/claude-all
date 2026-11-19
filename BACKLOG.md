@@ -85,7 +85,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: etapa build con JDK 21 y Maven Wrapper; etapa runtime JRE 21 no-root; copiar solo artefacto; healthcheck app si procede; fijar imagen base.
   - Artefactos: Dockerfile y .dockerignore.
   - Prueba: docker build finaliza y contenedor arranca con usuario no-root.
-- [x] B02.2 **DONE — pendiente de verificación de listener externo/reinicio.** CI `44529923824`: Kafka 3.9.1 + app construidos y arrancados con Compose, health UP, smoke de tres repeticiones de 100 mensajes publicado y validado PASS. `docker compose config --quiet` también pasa. Versión 3.9.1 evita KAFKA-18281 de 3.9.0. Pendiente comprobar desde host `localhost:9094` y reinicio con volumen persistente.
+- [x] B02.2 **DONE — pendiente de CI con prueba externa/restart.** Compose expone Kafka `localhost:9094`, usa KRaft/volumen persistente y app health UP; CI añade cliente desde host (`--network host`), reinicio broker, verificación de topics y reinicio app para probar recuperación (`c72870dd`).
   - Pasos: configurar node.id/roles/controller quorum/listeners/advertised listeners; definir red, volumen, restart policy, límites razonables y puertos; nunca latest.
   - Artefactos: compose.yaml y configuración Kafka.
   - Prueba: docker compose config válida; cliente desde host y contenedor resuelve listeners correctos.
@@ -93,7 +93,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: usar comando kafka-broker-api-versions o equivalente incluido en imagen; definir interval/timeout/retries/start_period; app depende de service_healthy.
   - Artefactos: healthcheck y depend_on en compose.
   - Prueba: arranque frío pasa de starting a healthy; detener broker provoca unhealthy.
-- [x] B02.4 **DONE — creación declarativa de topics; pendiente comprobar idempotencia/configuración.**
+- [x] B02.4 **DONE — pendiente de CI de idempotencia.** `KafkaTopicConfiguration` crea `input-topic`, `output-topic`, `input-dlt-topic` declarativamente con 24 particiones; CI reinicia broker y app y exige que los tres topics sigan presentes (`c72870dd`).
   - Pasos: script/init container espera broker; crea topics con nombres exactos; si ya existen, valida configuración y no falla; definir retención para suite.
   - Artefactos: init script/servicio y definición de topics.
   - Prueba: dos arranques seguidos sin error; describe topics confirma particiones/replication factor.
