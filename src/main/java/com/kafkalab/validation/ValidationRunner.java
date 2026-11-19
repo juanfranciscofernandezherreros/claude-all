@@ -1,6 +1,7 @@
 package com.kafkalab.validation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kafkalab.config.LabProperties;
 import com.kafkalab.exception.ValidationFailedException;
@@ -113,7 +114,7 @@ public class ValidationRunner implements ApplicationRunner {
                                     }
                                 }
                             }
-                        } catch (Exception e) { invalid++; }
+                        } catch (JsonProcessingException | IllegalArgumentException | NullPointerException invalidRecord) { invalid++; }
                     } else if (record.topic().equals(properties.outputTopic())) {
                         try {
                             OutputMessage output = mapper.readValue(record.value(), OutputMessage.class);
@@ -142,7 +143,7 @@ public class ValidationRunner implements ApplicationRunner {
                             DltMessage dead = mapper.readValue(record.value(), DltMessage.class);
                             InputMessage original = mapper.readValue(dead.originalPayload(), InputMessage.class);
                             if (original.messageId().startsWith(runId + "-")) dlt++;
-                        } catch (Exception ignored) {
+                        } catch (JsonProcessingException | IllegalArgumentException | NullPointerException malformedDeadLetter) {
                             if (record.value().contains(runId + "-")) dlt++;
                         }
                     }
