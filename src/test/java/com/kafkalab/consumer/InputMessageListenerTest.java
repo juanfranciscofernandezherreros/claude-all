@@ -95,7 +95,7 @@ class InputMessageListenerTest {
         InputMessage invalid = new InputMessage(2, "run-2", Instant.now(), "UNKNOWN",
                 new InputMessage.Payload(2, "x".repeat(1024)));
         DltMessage dlt = publishAndCaptureDlt(invalid, 1L);
-        assertEquals("IllegalArgumentException", dlt.errorType());
+        assertEquals("InvalidInputMessageException", dlt.errorType());
         assertTrue(dlt.errorMessage().contains("Unsupported schemaVersion or eventType"));
     }
 
@@ -104,7 +104,7 @@ class InputMessageListenerTest {
         InputMessage invalid = new InputMessage(1, "run-3", Instant.now(), "BENCHMARK",
                 new InputMessage.Payload(3, "short"));
         DltMessage dlt = publishAndCaptureDlt(invalid, 2L);
-        assertEquals("IllegalArgumentException", dlt.errorType());
+        assertEquals("InvalidInputMessageException", dlt.errorType());
     }
 
     @Test
@@ -112,7 +112,7 @@ class InputMessageListenerTest {
         InputMessage invalid = new InputMessage(1, "run-4-99", Instant.now(), "BENCHMARK",
                 new InputMessage.Payload(4, "x".repeat(1024)));
         DltMessage dlt = publishAndCaptureDlt(invalid, 3L);
-        assertEquals("IllegalArgumentException", dlt.errorType());
+        assertEquals("InvalidInputMessageException", dlt.errorType());
     }
 
     @Test
