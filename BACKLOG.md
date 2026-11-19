@@ -85,7 +85,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: etapa build con JDK 21 y Maven Wrapper; etapa runtime JRE 21 no-root; copiar solo artefacto; healthcheck app si procede; fijar imagen base.
   - Artefactos: Dockerfile y .dockerignore.
   - Prueba: docker build finaliza y contenedor arranca con usuario no-root.
-- [x] B02.2 **DONE — pendiente de smoke.** CI confirmó `docker compose config --quiet`; Kafka actualizado de 3.9.0 a 3.9.1 en `c882202` porque KAFKA-18281 hacía fallar KRaft con listeners explícitos `0.0.0.0`. PRD/README alineados (`54bdf93`, `7958e99`). Falta arranque real del broker y conectividad host/contenedor.
+- [x] B02.2 **DONE — pendiente de verificación de listener externo/reinicio.** CI `44524836580`: Kafka 3.9.1 + app construidos y arrancados con Compose, health UP, smoke de 100 mensajes publicado y validado PASS. `docker compose config --quiet` también pasa. Versión 3.9.1 evita KAFKA-18281 de 3.9.0. Pendiente comprobar desde host `localhost:9094` y reinicio con volumen persistente.
   - Pasos: configurar node.id/roles/controller quorum/listeners/advertised listeners; definir red, volumen, restart policy, límites razonables y puertos; nunca latest.
   - Artefactos: compose.yaml y configuración Kafka.
   - Prueba: docker compose config válida; cliente desde host y contenedor resuelve listeners correctos.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente de smoke funcional.** CI `81994a9`: build y `./mvnw -B clean verify` pasaron, Testcontainers 1.21.4 + Kafka 3.9.1 y test EOS ampliado pasaron. Compose construyó Kafka+app y `/actuator/health` respondió. El smoke generate/validate falló al escribir `benchmark-results` por permisos del bind mount para UID 10001 (`AccessDeniedException`). Corregido con preparación `chmod 777` en CI/Linux y ACL Windows (`c47c93f`, `8be44ae`, `f6af4fe`, `6c7aa0b`, `8f2a476`, `05df37f`, `6f2e8a3`, `bb40713`). Pendiente nueva CI con smoke PASS y benchmark 1M.
+- [x] B10.4 **DONE — pendiente benchmark 1M.** CI `44524836580` completó `./mvnw -B clean verify` (8 tests, 0 fallos, 0 omitidos), build Docker Kafka+app, health UP, smoke e2e de 100 mensajes (`published=100`, `validation.status=PASS`) y `docker compose down -v`. El fallo de permisos del bind mount quedó corregido con `chmod 777`/ACL antes del arranque (`c47c93f` y commits asociados). Pendiente ejecutar benchmark 1M y matriz completa.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
