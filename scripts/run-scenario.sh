@@ -22,6 +22,7 @@ java_version=$(docker compose exec -T app java -version 2>&1 | head -1)
 docker_version=$(docker version --format '{{.Server.Version}}')
 warmup="warmup-${name}-$(date +%s)-$$"
 mkdir -p "$results/$warmup"
+chmod 777 "$results/$warmup"
 echo "Warm-up: $name"
 docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
   --spring.main.web-application-type=none --lab.consumer.enabled=false --generate \
@@ -29,6 +30,7 @@ docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
 for repetition in 1 2 3; do
   run_id="${name}-r${repetition}-$(date -u +%Y%m%dT%H%M%S)-$$"
   mkdir -p "$results/$run_id"
+  chmod 777 "$results/$run_id"
   echo "Run $run_id"
   docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
     --spring.main.web-application-type=none --lab.consumer.enabled=false --generate \
