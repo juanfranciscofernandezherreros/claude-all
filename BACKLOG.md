@@ -153,7 +153,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: validar DTO; medir inicio/fin; invocar workload; construir salida; publicar con key=messageId; esperar ACK antes de permitir commit.
   - Artefactos: MessageProcessor, OutputPublisher y listener.
   - Prueba: N entradas válidas producen N salidas con mismo ID/sequence y checksum esperado.
-- [x] B05.3 **DONE — pendiente de verificación funcional.** Backoff/recoverer compilan en CI `bf6acc9`; el recoverer EXACTLY_ONCE usa ahora `ConsumerAwareRecordRecoverer` y `consumer.groupMetadata()` (`9dcb7580`) en vez de fabricar metadata de grupo. Falta probar reintentos, DLT y offsets en ambos modos.
+- [x] B05.3 **DONE — pendiente de verificación funcional.** Backoff/recoverer compilan en CI `bf6acc9`; el recoverer EXACTLY_ONCE usa ahora `ConsumerAwareRecordRecoverer` y `consumer.groupMetadata()` (`9dcb7580`) en vez de fabricar metadata de grupo. Test unitario adicional verifica que un fallo al publicar output propaga el error y NO hace ACK, permitiendo retry (`8f0dfd47`). Falta CI y prueba broker/retry/DLT/offsets en ambos modos.
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
