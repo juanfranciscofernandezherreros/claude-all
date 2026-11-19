@@ -197,7 +197,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: habilitar health/info/prometheus; restringir endpoints expuestos; revisar tags para cardinalidad; nunca incluir messageId/runId como labels.
   - Artefactos: application.yml y métricas.
   - Prueba: GET /actuator/health UP y /actuator/prometheus contiene series esperadas.
-- [x] B07.3 **DONE — datasource/dashboard provisionados; pendiente smoke de Grafana.**
+- [x] B07.3 **DONE — pendiente de CI con servicios reales.** Datasource Prometheus y dashboard `Kafka Performance Lab` provisionados desde YAML/JSON. CI ahora levanta Prometheus+Grafana, espera readiness, consulta `/api/datasources` y `/api/search`, y exige datasource `http://prometheus:9090` + dashboard UID `kafka-performance-lab` (`98caca27`).
   - Pasos: definir scrape interval; datasource Prometheus; paneles throughput, p50/p95/p99, error, DLT, lag, heap y GC; variables básicas de filtro.
   - Artefactos: YAML provisioning y JSON dashboard.
   - Prueba: dashboard se carga y muestra series tras ejecutar un smoke test.
