@@ -1,35 +1,144 @@
 server:
   port: ${APP_PORT:8080}
   shutdown: graceful
+
 spring:
   application:
     name: kafka-performance-lab
+
   kafka:
+    # Bootstrap de Kafka. En Docker Compose se sobrescribe a kafka:9092.
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+
+    # ---------------------------------------------------------------------
+    # PRODUCER: configuración explícita del cliente KafkaProducer.
+    # ---------------------------------------------------------------------
     producer:
+      client-id: kafka-lab-producer
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+      # Fiabilidad y entrega.
       acks: all
       retries: 2147483647
       batch-size: ${PRODUCER_BATCH_BYTES:65536}
+
       properties:
+        # Idempotencia y orden de las solicitudes.
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
+
+        # Agrupación y compresión.
         linger.ms: ${LINGER_MS:5}
         compression.type: ${COMPRESSION_TYPE:none}
+        buffer.memory: 33554432
+        max.request.size: 1048576
+
+        # Timeouts y política de reintento del cliente productor.
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 30000
+        max.block.ms: 60000
+        retry.backoff.ms: 100
+        retry.backoff.max.ms: 1000
+
+        # Conexiones y metadatos.
+        reconnect.backoff.ms: 50
+        reconnect.backoff.max.ms: 1000
+        connections.max.idle.ms: 540000
+        metadata.max.age.ms: 300000
+        metadata.max.idle.ms: 300000
+
+        # Buffers de red.
+        send.buffer.bytes: 131072
+        receive.buffer.bytes: 32768
+
+        # Métricas del cliente Kafka.
+        metrics.num.samples: 2
+        metrics.sample.window.ms: 30000
+        metrics.recording.level: INFO
+
+        # Identificación y comportamiento del cliente.
+        client.dns.lookup: use_all_dns_ips
+        socket.connection.setup.timeout.ms: 10000
+        socket.connection.setup.timeout.max.ms: 30000
+        partitioner.ignore.keys: false
+
+        # Transacciones: el transaction.id lo asigna
+        # TransactionalProducerConfiguration cuando DELIVERY_MODE=EXACTLY_ONCE.
+        transaction.timeout.ms: 60000
+
+    # ---------------------------------------------------------------------
+    # CONSUMER: configuración explícita del cliente KafkaConsumer.
+    # ---------------------------------------------------------------------
     consumer:
+      client-id: kafka-lab-consumer
       group-id: kafka-lab
-      enable-auto-commit: false
-      auto-offset-reset: earliest
-      max-poll-records: ${BATCH_SIZE:500}
-      isolation-level: ${KAFKA_ISOLATION_LEVEL:read_committed}
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+      # Gestión de offsets.
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+      isolation-level: ${KAFKA_ISOLATION_LEVEL:read_committed}
+
+      # Lotes y control de consumo.
+      max-poll-records: ${BATCH_SIZE:500}
+
+      properties:
+        # Poll, heartbeats y pertenencia al grupo.
+        max.poll.interval.ms: 300000
+        session.timeout.ms: 45000
+        heartbeat.interval.ms: 15000
+
+        # Fetch: equilibrio entre latencia y throughput.
+        fetch.min.bytes: 1
+        fetch.max.wait.ms: 500
+        fetch.max.bytes: 52428800
+        max.partition.fetch.bytes: 1048576
+
+        # Timeouts y reintentos de red.
+        request.timeout.ms: 60000
+        default.api.timeout.ms: 60000
+        retry.backoff.ms: 100
+        retry.backoff.max.ms: 1000
+        reconnect.backoff.ms: 50
+        reconnect.backoff.max.ms: 1000
+        connections.max.idle.ms: 540000
+
+        # Buffers y validación de registros.
+        send.buffer.bytes: 131072
+        receive.buffer.bytes: 65536
+        check.crcs: true
+        allow.auto.create.topics: false
+        exclude.internal.topics: true
+
+        # Métricas del cliente Kafka.
+        metrics.num.samples: 2
+        metrics.sample.window.ms: 30000
+        metrics.recording.level: INFO
+
+        # Resolución DNS y conexiones.
+        client.dns.lookup: use_all_dns_ips
+        socket.connection.setup.timeout.ms: 10000
+        socket.connection.setup.timeout.max.ms: 30000
+
+    # ---------------------------------------------------------------------
+    # LISTENER de Spring Kafka: ACK manual y concurrencia de contenedores.
+    # ---------------------------------------------------------------------
     listener:
       ack-mode: manual
       concurrency: ${CONCURRENCY:1}
+      poll-timeout: 1000
+      missing-topics-fatal: true
+      type: single
+
+    # Administración de topics declarados como NewTopic beans.
+    admin:
+      fail-fast: true
+
   lifecycle:
     timeout-per-shutdown-phase: 30s
+
 management:
   endpoints:
     web:
@@ -39,6 +148,7 @@ management:
     health:
       probes:
         enabled: true
+
 lab:
   messages: ${MESSAGES:1000000}
   partitions: ${PARTITIONS:24}
