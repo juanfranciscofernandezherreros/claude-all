@@ -193,7 +193,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: crear counters para entradas/salidas/fallos/retries/DLT; timers para processing/publish/e2e; histogramas con percentiles; nombres estables.
   - Artefactos: MetricsService y configuración Micrometer.
   - Prueba: tests de incrementos/timers y percentiles disponibles.
-- [x] B07.2 **DONE — Actuator/Prometheus configurados; pendiente GET real y revisión cardinalidad.**
+- [x] B07.2 **DONE.** CI `44534641649` ejecutó smoke PASS de tres repeticiones y obtuvo scrapes reales `/actuator/prometheus`; assertions verificaron `heapUsedBytes`, `gcPauseCount`, `gcPauseSeconds` y `kafkaConsumerLag` no nulos en `environment.json`. `LabMetrics` usa counters/timers sin etiquetas por mensaje/runId, evitando cardinalidad no acotada.
   - Pasos: habilitar health/info/prometheus; restringir endpoints expuestos; revisar tags para cardinalidad; nunca incluir messageId/runId como labels.
   - Artefactos: application.yml y métricas.
   - Prueba: GET /actuator/health UP y /actuator/prometheus contiene series esperadas.
