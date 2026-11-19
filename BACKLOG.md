@@ -109,7 +109,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: declarar campos/tipos exactos del PRD; Bean Validation para null/vacíos/rangos; UTC ISO-8601; schemaVersion=1; preservar entrada original en DLT.
   - Artefactos: model/InputMessage, OutputMessage, DltMessage y tests.
   - Prueba: serialización JSON golden tests y rechazo de cada campo obligatorio inválido.
-- [x] B03.2 **DONE — tests escritos; pendientes de ejecución.**
+- [x] B03.2 **DONE.** CI `44537614948` superó `./mvnw -B clean verify` con test de contrato DTO: secuencia mínima 1 válida, secuencia 0 inválida, campos requeridos, JSON corrupto y round-trip Unicode/timestamp. El smoke e2e de tres repeticiones terminó PASS. Se corrigió discrepancia entre `@PositiveOrZero` y validación del listener usando `@Positive` (`d78159bb`) y se actualizó el test (`b2e5e38c`).
   - Pasos: generar UUID por run; construir ID con secuencia decimal estable; checksum bytes UTF-8 en hexadecimal; evitar dependencia del reloj.
   - Artefactos: RunIdProvider, MessageIdFactory, ChecksumService.
   - Prueba: vectores SHA-256 conocidos; misma entrada produce mismo ID/checksum; secuencias no colisionan.
