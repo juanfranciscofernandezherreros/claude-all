@@ -15,6 +15,17 @@
 6. No squash, amend de commits publicados, rebase interactivo ni force-push. Mantener historial lineal.
 7. No tocar archivos ajenos ni borrar datos/volúmenes/resultados anteriores.
 
+
+## Regla obligatoria: marcar siempre el BACKLOG
+Esta regla es prioritaria y no se puede omitir:
+- Cada vez que se complete una tarea o micro-paso del BACKLOG, actualizar inmediatamente `BACKLOG.md` y publicar esa actualización en un commit visible. No dejarlo para el final de la sesión.
+- Cambiar siempre la casilla, no solo el texto:
+  - `[x]` cuando la implementación de la tarea está completada y registrada, aunque falte ejecutar una verificación externa. En ese caso, el estado debe decir `DONE — pendiente de verificación` y nombrar la prueba pendiente.
+  - `[ ]` cuando el trabajo sigue incompleto o está bloqueado por implementación/pruebas pendientes; indicar `BLOCKED` y la causa concreta.
+  - `DONE` sin calificativo únicamente después de ejecutar y superar la prueba de aceptación.
+- Al completar un micro-paso, registrar evidencia breve; al completar la tarea padre, sincronizar checkbox, estado y evidencia.
+- Antes de cerrar cada sesión, revisar que todas las tareas completadas durante ella tengan `[x]`. Una tarea completada nunca debe quedarse accidentalmente con `[ ]`.
+
 ## Calidad y seguridad
 - No preguntar por decisiones ya cerradas. Para decisiones menores no especificadas, elegir opción simple compatible y documentar solo si afecta arquitectura.
 - Nunca inventar pruebas, resultados, métricas, hardware o estado PASS/DONE.
