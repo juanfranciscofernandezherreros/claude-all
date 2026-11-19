@@ -6,7 +6,8 @@ Requisitos: Git, Docker Desktop y Claude Code CLI instalado y autenticado. El la
 
 - [PRD.md](PRD.md): contrato funcional y técnico.
 - [BACKLOG.md](BACKLOG.md): tareas ordenadas, dependencias y criterios de aceptación.
-- [CLAUDE.md](CLAUDE.md): instrucciones compactas de ejecución.
+- [AGENTS.md](AGENTS.md): instrucciones canónicas para agentes de código.
+- [CLAUDE.md](CLAUDE.md): punto de entrada compatible con Claude Code.
 - `benchmark-results/`: evidencias e informes reales.
 
 Puertos: Kafka 9094, app 8080, Prometheus 9090, Grafana 3000. No se deben inventar resultados; consulta los informes generados.
