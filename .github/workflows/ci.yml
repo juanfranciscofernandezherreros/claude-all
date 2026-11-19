@@ -58,6 +58,21 @@ jobs:
                      for key in ("payload", "workload", "delivery") for x in matrix[key])
           print("Benchmark matrix matches PRD: 5 payload, 3 workload, 2 delivery scenarios.")
           PY
+      - name: Validate million-message delivery comparison matrix
+        run: |
+          bash scripts/run-delivery-comparison.sh --dry-run > /tmp/delivery-comparison.json
+          python3 - <<'PY'
+          import json
+          matrix = json.load(open("/tmp/delivery-comparison.json", encoding="utf-8"))
+          assert matrix["messagesPerRun"] == 1_000_000
+          assert matrix["concurrency"] == 10
+          assert matrix["repetitionsPerMode"] == 3
+          assert matrix["deliveryModes"] == ["AT_LEAST_ONCE", "EXACTLY_ONCE"]
+          assert matrix["batchSize"] == 1000
+          assert matrix["producerBatchBytes"] == 131072
+          assert matrix["compression"] == "lz4"
+          print("Million-message delivery comparison matrix validated.")
+          PY
       - name: Validate stress runner defaults
         run: |
           bash scripts/run-stress.sh --dry-run > /tmp/stress-matrix.json
