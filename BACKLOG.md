@@ -241,7 +241,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
-- [ ] B09.5 **BLOCKED — métricas disponibles solo como snapshot final, no muestreo durante ejecución.** Docker memory, heap JVM, GC y consumer lag se registran en `environment.json`; `prometheus-metrics.txt` conserva scrape bruto. La evidencia actual verifica campos no nulos, pero no calcula máximos/promedios ni series temporales (`35f3ebd`, `f8035e1`, `da34af4`, `08a4447`, CI `44528276019`). Falta muestreador periódico durante cada repetición y agregación de promedio/máximo.
+- [x] B09.5 **DONE — pendiente de CI con nuevos artefactos.** `run-scenario.sh` toma muestras periódicas (intervalo configurable `RESOURCE_SAMPLE_INTERVAL_SECONDS`, default 5s) durante generación/validación; guarda `resource-samples.tsv`, `resource-samples.json` y scrapes Prometheus individuales; `environment.json` agrega máximos de Docker memory/heap, porcentaje de memoria, lag máximo y deltas GC (`fd6b0b76`, `8b6bc046`). README actualizado (`e6cb359c`); CI ahora exige muestras y campos agregados no nulos (`fb0b0a6e`).
   - Pasos: consultar métricas JVM/Prometheus y Docker stats; muestrear durante ejecución; registrar promedio/máximo; si no hay permiso, guardar unavailable + motivo.
   - Artefactos: environment.json y summary.json.
   - Prueba: campos presentes con valor o motivo explícito; no usar cero para dato desconocido.
