@@ -34,7 +34,14 @@ public class GeneratorRunner implements ApplicationRunner {
         if (!args.containsOption("generate")) return;
         long count = positiveLongOption(args, "messages", properties.messages());
         long timeoutSeconds = positiveLongOption(args, "timeout-seconds", 600L);
-        String runId = args.containsOption("run-id") ? args.getOptionValues("run-id").get(0) : ids.newRunId();
+        String runId = ids.newRunId();
+        if (args.containsOption("run-id")) {
+            List<String> runIdValues = args.getOptionValues("run-id");
+            boolean isRunIdMissing = runIdValues == null || runIdValues.isEmpty()
+                    || runIdValues.get(0).isBlank();
+            if (isRunIdMissing) throw new InvalidCommandLineException("--run-id requires a non-blank value");
+            runId = runIdValues.get(0);
+        }
         try {
             offsetSnapshot.capture(runId);
         } catch (Exception snapshotFailure) {
