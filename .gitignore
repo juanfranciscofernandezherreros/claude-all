@@ -30,5 +30,8 @@ kafka-data/
 
 # Benchmark raw artifacts (keep compact summaries and reports)
 benchmark-results/*/execution.log
+benchmark-results/*/offsets.json
+benchmark-results/*/validation-console.json
+benchmark-results/warmup-*/
 benchmark-results/*/raw/
 benchmark-results/*/validation-work/
