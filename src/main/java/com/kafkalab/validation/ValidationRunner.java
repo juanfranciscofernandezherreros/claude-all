@@ -58,7 +58,7 @@ public class ValidationRunner implements ApplicationRunner {
         boolean processingComplete = false;
         Path folder = Path.of("benchmark-results", runId);
         Files.createDirectories(folder);
-        Path output = folder.resolve("validation.json");
+        Path reportPath = folder.resolve("validation.json");
         try (DiskChecksumStore checksumStore = new DiskChecksumStore(folder, expected);
              KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config)) {
             for (String topic : List.of(properties.inputTopic(), properties.outputTopic(), properties.dltTopic())) {
@@ -177,9 +177,9 @@ public class ValidationRunner implements ApplicationRunner {
         }
         report.put("latency", latency);
         report.put("status", processingComplete && missing == 0 && duplicates == 0 && unexpected == 0 && invalid == 0 && dlt == 0 ? "PASS" : "FAIL");
-        mapper.writerWithDefaultPrettyPrinter().writeValue(output.toFile(), report);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(reportPath.toFile(), report);
         System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report));
-        if (!"PASS".equals(report.get("status"))) throw new IllegalStateException("Independent validation failed; see " + output);
+        if (!"PASS".equals(report.get("status"))) throw new IllegalStateException("Independent validation failed; see " + reportPath);
     }
 
     private boolean groupCommittedThrough(AdminClient admin, Map<TopicPartition, Long> required) throws Exception {
