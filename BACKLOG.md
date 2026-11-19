@@ -245,7 +245,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: consultar métricas JVM/Prometheus y Docker stats; muestrear durante ejecución; registrar promedio/máximo; si no hay permiso, guardar unavailable + motivo.
   - Artefactos: environment.json y summary.json.
   - Prueba: campos presentes con valor o motivo explícito; no usar cero para dato desconocido.
-- [ ] B09.6 **BLOCKED — `run-stress.sh` solo ejecuta un escenario único; falta el ciclo incremental y las condiciones de parada.** Script actual admite defaults 5M, concurrencia 20, 100 KiB, HEAVY, EXACTLY_ONCE y dry-run (`a752554`, CI `6cd067a`), pero no aumenta en pasos de 100k, no mantiene histórico por escalón y no detiene por error/lag/memoria. Falta implementar la máquina de estados de stress y tests unitarios de cada condición.
+- [ ] B09.6 **BLOCKED — `run-stress.sh` solo ejecuta un escenario único; falta el ciclo incremental y las condiciones de parada.** Script actual admite defaults 5M, concurrencia 20, 100 KiB, HEAVY, EXACTLY_ONCE y dry-run (`a752554`, CI `6cd067a`), pero no aumenta en pasos de 100k, no mantiene histórico por escalón y no detiene por error/lag/memoria. `run-scenario.sh` permite fijar `SCENARIO_REPETITIONS` (default 3) para usar una repetición por escalón sin cambiar el benchmark normal (`b54a6601`). Falta implementar la máquina de estados incremental y tests de parada.
   - Pasos: aumentar en 100k; validar cada paso; mantener histórico; detener ante error >0, lag creciente 3 pasos o memoria >85%, o al llegar a 5M.
   - Artefactos: stress runner y resultados por escalón.
   - Prueba: tests unitarios de cada condición de parada.
