@@ -53,6 +53,7 @@ public class ValidationRunner implements ApplicationRunner {
         long duplicates = 0, unexpected = 0, invalid = 0, dlt = 0;
         List<Long> latencyNanos = new ArrayList<>();
         List<TopicPartition> partitions = new ArrayList<>();
+        boolean processingComplete = false;
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config)) {
             for (String topic : List.of(properties.inputTopic(), properties.outputTopic(), properties.dltTopic())) {
                 for (PartitionInfo p : consumer.partitionsFor(topic, Duration.ofSeconds(20))) {
@@ -80,7 +81,6 @@ public class ValidationRunner implements ApplicationRunner {
                 consumer.seekToBeginning(partitions);
             }
             long deadline = System.nanoTime() + Duration.ofSeconds(timeoutSeconds).toNanos();
-            boolean processingComplete = false;
             Map<TopicPartition, Long> finalEnds = null;
             Properties adminConfig = new Properties();
             adminConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG,
