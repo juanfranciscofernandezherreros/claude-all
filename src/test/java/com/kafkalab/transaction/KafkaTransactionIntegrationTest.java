@@ -40,7 +40,7 @@ class KafkaTransactionIntegrationTest {
         String input = "eos-input-" + UUID.randomUUID();
         String output = "eos-output-" + UUID.randomUUID();
         try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
-            admin.createTopics(List.of(new NewTopic(input, 1, (short) 1), new NewTopic(output, 1, (short) 1))).all().get();
+            admin.createTopics(List.of(new NewTopic(input, 1, (short) 1), new NewTopic(output, 1, (short) 1), new NewTopic("eos-dlt-" + input, 1, (short) 1))).all().get();
         }
 
         Properties producerProperties = new Properties();
@@ -147,6 +147,60 @@ class KafkaTransactionIntegrationTest {
             restarted.subscribe(List.of(input));
             var replayed = restarted.poll(Duration.ofSeconds(2));
             assertTrue(replayed.isEmpty(), "restarted group must resume after the transactionally committed offset");
+        }
+
+        String dltTopic = "eos-dlt-" + input;
+        try (KafkaProducer<String, String> inputProducer = new KafkaProducer<>(inputProducerProperties)) {
+            inputProducer.send(new ProducerRecord<>(input, "id-2", "invalid-json")).get();
+        }
+
+        try (KafkaConsumer<String, String> retryingConsumer = new KafkaConsumer<>(restartProperties)) {
+            retryingConsumer.subscribe(List.of(input));
+            var invalidRecords = retryingConsumer.poll(Duration.ofSeconds(2));
+            long waitUntil = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+            while (invalidRecords.isEmpty() && System.nanoTime() < waitUntil) {
+                invalidRecords = retryingConsumer.poll(Duration.ofMillis(250));
+            }
+            assertEquals(1, invalidRecords.count());
+            var invalid = invalidRecords.iterator().next();
+            Properties dltProducerProperties = (Properties) producerProperties.clone();
+            dltProducerProperties.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "dlt-" + UUID.randomUUID());
+            try (KafkaProducer<String, String> dltProducer = new KafkaProducer<>(dltProducerProperties)) {
+                dltProducer.initTransactions();
+                dltProducer.beginTransaction();
+                dltProducer.send(new ProducerRecord<>(dltTopic, invalid.key(), "dead-letter")).get();
+                dltProducer.sendOffsetsToTransaction(
+                        Map.of(new TopicPartition(input, invalid.partition()), new OffsetAndMetadata(invalid.offset() + 1)),
+                        retryingConsumer.groupMetadata());
+                dltProducer.commitTransaction();
+            }
+        }
+
+        Properties dltReaderProperties = new Properties();
+        dltReaderProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());
+        dltReaderProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "eos-dlt-read-" + UUID.randomUUID());
+        dltReaderProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        dltReaderProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        dltReaderProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        dltReaderProperties.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+        try (KafkaConsumer<String, String> dltReader = new KafkaConsumer<>(dltReaderProperties)) {
+            dltReader.subscribe(List.of(dltTopic));
+            var deadLetters = dltReader.poll(Duration.ofSeconds(2));
+            long waitUntil = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+            while (deadLetters.isEmpty() && System.nanoTime() < waitUntil) {
+                deadLetters = dltReader.poll(Duration.ofMillis(250));
+            }
+            assertEquals(1, deadLetters.count());
+            assertEquals("dead-letter", deadLetters.iterator().next().value());
+        }
+        try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
+            var committed = admin.listConsumerGroupOffsets("eos-group").partitionsToOffsetAndMetadata().get();
+            assertEquals(2L, committed.get(new TopicPartition(input, 0)).offset());
+        }
+        try (KafkaConsumer<String, String> restartedAfterDlt = new KafkaConsumer<>(restartProperties)) {
+            restartedAfterDlt.subscribe(List.of(input));
+            assertTrue(restartedAfterDlt.poll(Duration.ofSeconds(2)).isEmpty(),
+                    "restarted consumer must not replay the DLT-committed input");
         }
     }
     @Test
