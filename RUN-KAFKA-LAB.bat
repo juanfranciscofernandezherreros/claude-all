@@ -2,15 +2,12 @@
 setlocal
 title Kafka Performance Lab
 cd /d "%~dp0"
-if not exist "PRD.md" (
-  echo ERROR: Run this file from the cloned claude-all repository.
+if not exist "compose.yaml" (
+  echo ERROR: compose.yaml not found. Run this launcher from the repository.
   pause
   exit /b 1
 )
-where git >nul 2>&1 || (echo ERROR: Install Git for Windows.& pause& exit /b 1)
-where claude >nul 2>&1 || (echo ERROR: Install and authenticate Claude Code CLI.& pause& exit /b 1)
-where docker >nul 2>&1 || (echo ERROR: Install Docker Desktop.& pause& exit /b 1)
-
+where docker >nul 2>&1 || (echo ERROR: Install Docker Desktop with Docker Compose v2.& pause& exit /b 1)
 docker info >nul 2>&1
 if errorlevel 1 (
   if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" (
@@ -31,12 +28,22 @@ if errorlevel 1 (
   exit /b 1
 )
 :docker_ready
-echo Running the complete project autonomously.
-echo WARNING: --dangerously-skip-permissions grants Claude broad access.
-echo Run only in this trusted repository and review changes afterwards.
-claude --dangerously-skip-permissions "Read PRD.md and CLAUDE.md. Execute the full specification. Minimize narration and token use. Implement, build, test, start local Kafka with Docker Compose, run the 1M benchmark, independently validate outputs, save truthful reports, and fix failures. Ask no questions. Never fabricate results."
+echo Starting Kafka, the application, Prometheus and Grafana...
+docker compose up -d --build
+if errorlevel 1 goto failed
+echo.
+echo Starting the 1,000,000-message benchmark.
+call "scripts\run-benchmark.bat" 1000000
 set "RC=%ERRORLEVEL%"
 echo.
-if "%RC%"=="0" (echo Claude finished.) else (echo Claude exit code: %RC%.)
+if "%RC%"=="0" (
+  echo Benchmark finished. Reports are in benchmark-results.
+) else (
+  echo Benchmark failed or was blocked. Review benchmark-results and Docker logs.
+)
 pause
 exit /b %RC%
+:failed
+echo ERROR: Docker Compose could not start the stack.
+pause
+exit /b 1
