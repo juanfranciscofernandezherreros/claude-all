@@ -113,6 +113,24 @@ class InputMessageListenerTest {
         assertEquals("IllegalArgumentException", dlt.errorType());
     }
 
+    @Test
+    void failedOutputPublishDoesNotAcknowledgeInputSoKafkaCanRetry() throws Exception {
+        String payload = "x".repeat(1024);
+        InputMessage input = new InputMessage(1, "run-retry-1", Instant.now(), "BENCHMARK",
+                new InputMessage.Payload(1, payload));
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("input-topic", 0, 9L,
+                input.messageId(), mapper.writeValueAsString(input));
+        doThrow(new IllegalStateException("broker unavailable"))
+                .when(publisher).publish(eq("output-topic"), eq(input.messageId()), anyString());
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> listener.onMessage(record, acknowledgment, consumer));
+
+        assertEquals("broker unavailable", failure.getMessage());
+        verify(acknowledgment, never()).acknowledge();
+        verify(publisher).publish(eq("output-topic"), eq(input.messageId()), anyString());
+    }
+
     private DltMessage publishAndCaptureDlt(InputMessage invalid, long offset) throws Exception {
         ConsumerRecord<String, String> record = new ConsumerRecord<>("input-topic", 0, offset,
                 invalid.messageId(), mapper.writeValueAsString(invalid));
