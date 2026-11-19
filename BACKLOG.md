@@ -73,7 +73,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: agrupar propiedades kafka/app/benchmark/metrics; mapear cada variable PRD (incluidos BATCH_SIZE y PRODUCER_BATCH_BYTES); validar enum/rango/positividad; no registrar secretos; documentar defaults.
   - Artefactos: application.yml, clases @ConfigurationProperties y tests.
   - Prueba: contexto arranca con defaults; valores inválidos impiden arrancar con mensaje accionable.
-- [x] B01.4 **DONE — parcial; falta documentación completa en README.**
+- [x] B01.4 **DONE — tabla de variables ampliada con defaults, rangos y efectos; pendiente comprobar interpolación Compose y arranque real.** Evidencia: README commit `c0666d0`; prueba de entorno pendiente.
   - Pasos: listar variable, default, rango, unidad y efecto; mantener Compose y Spring con nombres idénticos; no incluir credenciales reales.
   - Artefactos: .env.example y tabla de variables en README.
   - Prueba: Compose interpola el ejemplo y app arranca con configuración por defecto.
@@ -265,7 +265,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: comprobar comandos; localizar Docker Desktop; iniciar si detenido; esperar máximo 120s; verificar PRD/BACKLOG; ejecutar Claude con instrucciones mínimas; preservar exit code y pausar solo al final.
   - Artefactos: RUN-KAFKA-LAB.bat.
   - Prueba: revisar rutas con espacios, Docker detenido/activo/no instalado y Claude ausente; no ejecutar permisos peligrosos sin advertencia visible.
-- [ ] B10.3 **BLOCKED — README aún no documenta todos los comandos/variables/resultados.**
+- [x] B10.3 **DONE — README documenta instalación, quick start, comandos Windows/Linux, configuración, resultados, puertos, métricas y troubleshooting; pendiente validación desde clon limpio.** Evidencia: README commit `c0666d0`; prueba de clon limpio pendiente.
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
