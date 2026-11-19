@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kafkalab.config.LabProperties;
 import com.kafkalab.exception.GenerationFailedException;
+import com.kafkalab.exception.InvalidCommandLineException;
 import com.kafkalab.model.InputMessage;
 import java.time.Instant;
 import java.util.*;
@@ -31,12 +32,8 @@ public class GeneratorRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         if (!args.containsOption("generate")) return;
-        long count = args.containsOption("messages")
-                ? Long.parseLong(args.getOptionValues("messages").get(0)) : properties.messages();
-        if (count < 1) throw new IllegalArgumentException("--messages must be positive");
-        long timeoutSeconds = args.containsOption("timeout-seconds")
-                ? Long.parseLong(args.getOptionValues("timeout-seconds").get(0)) : 600L;
-        if (timeoutSeconds < 1) throw new IllegalArgumentException("--timeout-seconds must be positive");
+        long count = positiveLongOption(args, "messages", properties.messages());
+        long timeoutSeconds = positiveLongOption(args, "timeout-seconds", 600L);
         String runId = args.containsOption("run-id") ? args.getOptionValues("run-id").get(0) : ids.newRunId();
         try {
             offsetSnapshot.capture(runId);
@@ -105,6 +102,27 @@ public class GeneratorRunner implements ApplicationRunner {
         } finally {
             pool.shutdownNow();
         }
+    }
+
+
+    private long positiveLongOption(ApplicationArguments args, String optionName, long defaultValue) {
+        if (!args.containsOption(optionName)) return defaultValue;
+        List<String> optionValues = args.getOptionValues(optionName);
+        boolean isOptionValueMissing = optionValues == null || optionValues.isEmpty();
+        if (isOptionValueMissing) {
+            throw new InvalidCommandLineException("--" + optionName + " requires a value");
+        }
+        long parsedValue;
+        try {
+            parsedValue = Long.parseLong(optionValues.get(0));
+        } catch (NumberFormatException invalidNumber) {
+            throw new InvalidCommandLineException("--" + optionName + " must be a positive integer", invalidNumber);
+        }
+        boolean isValueNotPositive = parsedValue < 1;
+        if (isValueNotPositive) {
+            throw new InvalidCommandLineException("--" + optionName + " must be positive");
+        }
+        return parsedValue;
     }
 
     static List<Long> blockStartsForWorker(long count, int workerId, int workerCount, int batchSize) {
