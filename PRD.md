@@ -24,7 +24,7 @@ Micrometer/Prometheus: input_received_total, output_published_total, processing_
 
 ## 6. Medición y matriz
 Usar reloj monotónico para duraciones. Definiciones: publish_seconds = fin de publicación de entradas - inicio; processing_seconds = fin de procesamiento - inicio de consumo; end_to_end_seconds = instante en que validador confirma todas las salidas - inicio de publicación. throughput = salidas válidas únicas / end_to_end_seconds. Latencia = processedAt - createdAt; informar min/mean/p50/p95/p99/max. Error rate = entradas fallidas / entradas totales. No contar consumos ni duplicados como throughput.
-Cada escenario: una precarga/warm-up de 10.000 mensajes no contabilizada y 3 ejecuciones medidas; reportar mediana y cada ejecución. Vaciar topics/resetear offsets y usar runId distinto antes de cada ejecución.
+Cada escenario: una precarga/warm-up de 10.000 mensajes no contabilizada y 3 ejecuciones medidas; reportar mediana y cada ejecución. Aislar cada ejecución con runId único y snapshot de offsets iniciales de input/output/DLT; el validador procesa solo los offsets posteriores al snapshot. Los topics no se vacían entre escenarios: esta estrategia evita borrar datos y proporciona aislamiento lógico reproducible. El borrado de volúmenes queda reservado a la limpieza explícita del stack.
 Suite principal: 1.000.000 mensajes, 1 KiB, LIGHT, AT_LEAST_ONCE; concurrencia 1,2,5,10,20.
 Suite payload: 100.000 mensajes, concurrencia 5, LIGHT, AT_LEAST_ONCE; tamaños 1,5,10,50,100 KiB.
 Suite workload: 100.000 mensajes, concurrencia 5, 1 KiB, AT_LEAST_ONCE; LIGHT/MEDIUM/HEAVY.
