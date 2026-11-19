@@ -9,5 +9,5 @@ if not defined BASH (
   echo ERROR: Git Bash is required. Install Git for Windows.
   exit /b 1
 )
-%BASH% "%~dp0generate.sh" %*
+"%BASH%" "%~dp0generate.sh" %*
 exit /b %ERRORLEVEL%
