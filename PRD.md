@@ -11,13 +11,13 @@ Flujo: generador independiente -> input-topic -> consumer -> transformación -> 
 Particionar por messageId. Grupo kafka-lab. Concurrencia configurable. Serialización JSON con esquema versionado.
 
 ## 3. Contrato de mensajes
-Entrada: {schemaVersion:1,messageId:UUID,createdAt:ISO-8601 UTC,eventType:"BENCHMARK",payload:{sequence:long,data:string}}. IDs únicos. Salida: {schemaVersion:1,messageId,createdAt,processedAt,status:"OK",result:{sequence,checksum}}. Transformación determinista: SHA-256 UTF-8 de data; conservar sequence e ID. No usar reloj/azar en resultado.
+Entrada: {schemaVersion:1,messageId:string(runId-sequence),createdAt:ISO-8601 UTC,eventType:"BENCHMARK",payload:{sequence:long,data:string}}. IDs únicos. Salida: {schemaVersion:1,messageId,createdAt,processedAt,status:"OK",result:{sequence,checksum}}. Transformación determinista: SHA-256 UTF-8 de data; conservar sequence e ID. No usar reloj/azar en resultado.
 Una salida por cada entrada válida. Confirmar offset solo después de confirmar publicación de salida. AT_LEAST_ONCE puede duplicar tras fallo; validador detecta duplicados. EXACTLY_ONCE usa transacción Kafka para publicar salida y confirmar offsets atómicamente; producer transaccional por instancia, isolation.level=read_committed. No prometer atomicidad fuera de Kafka.
 JSON inválido o fallo permanente -> input-dlt-topic con payload original, error y timestamp; no descartar silenciosamente. Reintentos: 3, backoff 1s exponencial x2, máximo 10s; después DLT. Errores transitorios recuperables reintentan; errores de validación van directos a DLT.
 
 ## 4. Configuración predeterminada
 MESSAGES=1000000; PARTITIONS=24; CONCURRENCY=1; BATCH_SIZE=500; GENERATOR_THREADS=4; PAYLOAD_BYTES=1024; DELIVERY_MODE=AT_LEAST_ONCE; WORKLOAD=LIGHT; COMPRESSION_TYPE=none; LINGER_MS=5. Poll/batch y productor configurados para respetar BATCH_SIZE. Variables documentadas y validadas al iniciar. Concurrencia permitida: 1,2,5,10,20. Payload: 1,5,10,50,100 KiB. WORKLOAD: LIGHT=solo SHA-256; MEDIUM=10 rondas SHA-256; HEAVY=100 rondas SHA-256. Sin sleeps artificiales. No cambiar parámetros durante una ejecución.
-Generador: UUID reproducible por ejecución (prefijo runId + secuencia), tasa ilimitada por defecto, progreso cada 10.000, fallos y duración de publicación separados.
+Generador: runId UUID por ejecución; messageId determinista string <runId>-<sequence>, único y reproducible, tasa ilimitada por defecto, progreso cada 10.000, fallos y duración de publicación separados.
 
 ## 5. Métricas
 Micrometer/Prometheus: input_received_total, output_published_total, processing_failed_total, retry_total, dlt_total, processing_duration, end_to_end_latency, publish_duration, consumer_lag, JVM heap/GC y CPU/memoria si Docker los expone. Histogramas con percentiles p50/p95/p99. Nunca usar IDs como labels. Dashboard Grafana provisionado automáticamente.
