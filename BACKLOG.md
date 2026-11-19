@@ -181,7 +181,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: caso éxito; fallo antes del commit; caída/reinicio; lectura con read_committed y read_uncommitted para demostrar diferencia.
   - Artefactos: tests Testcontainers.
   - Prueba: registros abortados invisibles en read_committed y offsets coherentes.
-- [x] B06.4 **DONE — pendiente de CI verde.** Testcontainers amplía la prueba EOS: una transacción abortada se reintenta sin duplicar output visible `read_committed`; después procesa una entrada inválida mediante DLT transaccional + commit del offset en la misma transacción, comprueba un único DLT y offset 2, y reinicia el consumer sin replay (`8148554d`).
+- [x] B06.4 **DONE.** Testcontainers amplía la prueba EOS: una transacción abortada se reintenta sin duplicar output visible `read_committed`; después procesa una entrada inválida mediante DLT transaccional + commit del offset en la misma transacción, comprueba un único DLT y offset 2, y reinicia el consumer sin replay (`8148554d`); CI `44536265855` superó `clean verify` con el test de abort/retry + DLT transaccional y reinicio.
   - Pasos: inyectar error temporal/permanente; reiniciar consumer; verificar transacción abortada y reintento; comprobar política DLT.
   - Artefactos: pruebas de resiliencia EOS y reporte.
   - Prueba: cada entrada termina en una única salida confirmada o DLT contabilizada.
