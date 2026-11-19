@@ -35,3 +35,6 @@ benchmark-results/*/validation-console.json
 benchmark-results/warmup-*/
 benchmark-results/*/raw/
 benchmark-results/*/validation-work/
+benchmark-results/*/resource-samples.*
+benchmark-results/*/prometheus-*.txt
+
