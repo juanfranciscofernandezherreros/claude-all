@@ -32,10 +32,17 @@ public class InputMessageProcessor {
 
     public OutputMessage process(InputMessage input) {
         Set<ConstraintViolation<InputMessage>> violations = validator.validate(input);
-        if (!violations.isEmpty() || input.schemaVersion() != 1 || !"BENCHMARK".equals(input.eventType())
-                || input.payload().sequence() < 1
-                || !input.messageId().endsWith("-" + input.payload().sequence())
-                || input.payload().data().getBytes(StandardCharsets.UTF_8).length != properties.payloadBytes()) {
+        boolean hasBeanValidationErrors = !violations.isEmpty();
+        boolean hasUnsupportedSchemaVersion = input.schemaVersion() != 1;
+        boolean hasUnsupportedEventType = !"BENCHMARK".equals(input.eventType());
+        boolean hasInvalidSequence = input.payload().sequence() < 1;
+        boolean hasMessageIdSequenceMismatch =
+                !input.messageId().endsWith("-" + input.payload().sequence());
+        boolean hasUnexpectedPayloadSize =
+                input.payload().data().getBytes(StandardCharsets.UTF_8).length != properties.payloadBytes();
+
+        if (hasBeanValidationErrors || hasUnsupportedSchemaVersion || hasUnsupportedEventType
+                || hasInvalidSequence || hasMessageIdSequenceMismatch || hasUnexpectedPayloadSize) {
             String reason = violations.stream()
                     .map(v -> v.getPropertyPath() + " " + v.getMessage())
                     .collect(Collectors.joining("; "));
