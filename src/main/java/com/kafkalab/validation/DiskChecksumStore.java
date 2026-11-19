@@ -14,6 +14,7 @@ import java.util.HexFormat;
 final class DiskChecksumStore implements AutoCloseable {
     private static final int CHECKSUM_BYTES = 32;
 
+    private final long expectedCount;
     private final Path expectedPath;
     private final Path actualPath;
     private final RandomAccessFile expectedFile;
@@ -32,6 +33,7 @@ final class DiskChecksumStore implements AutoCloseable {
             long bytes = Math.multiplyExact(expectedCount, CHECKSUM_BYTES);
             expectedStore.setLength(bytes);
             actualStore.setLength(bytes);
+            this.expectedCount = expectedCount;
             this.expectedPath = expected;
             this.actualPath = actual;
             this.expectedFile = expectedStore;
@@ -59,7 +61,7 @@ final class DiskChecksumStore implements AutoCloseable {
         return Arrays.equals(expected, actual);
     }
 
-    private static void write(RandomAccessFile file, long sequence, String checksum) throws IOException {
+    private void write(RandomAccessFile file, long sequence, String checksum) throws IOException {
         byte[] bytes = HexFormat.of().parseHex(checksum);
         if (bytes.length != CHECKSUM_BYTES) {
             throw new IllegalArgumentException("Checksum must contain exactly 32 bytes");
@@ -68,15 +70,17 @@ final class DiskChecksumStore implements AutoCloseable {
         file.write(bytes);
     }
 
-    private static byte[] read(RandomAccessFile file, long sequence) throws IOException {
+    private byte[] read(RandomAccessFile file, long sequence) throws IOException {
         byte[] bytes = new byte[CHECKSUM_BYTES];
         file.seek(offset(sequence));
         file.readFully(bytes);
         return bytes;
     }
 
-    private static long offset(long sequence) {
-        if (sequence < 1) throw new IllegalArgumentException("sequence must be positive");
+    private long offset(long sequence) {
+        if (sequence < 1 || sequence > expectedCount) {
+            throw new IllegalArgumentException("sequence must be between 1 and " + expectedCount);
+        }
         return Math.multiplyExact(sequence - 1, CHECKSUM_BYTES);
     }
 
