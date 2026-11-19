@@ -170,9 +170,9 @@ public class ValidationRunner implements ApplicationRunner {
             for (int i = 0; i < latencyCount; i++) latencySum += latencyNanos[i];
             latency.put("minNanos", latencyNanos[0]);
             latency.put("meanNanos", latencySum / (double) latencyCount);
-            latency.put("p50Nanos", percentile(latencyNanos, latencyCount, 0.50));
-            latency.put("p95Nanos", percentile(latencyNanos, latencyCount, 0.95));
-            latency.put("p99Nanos", percentile(latencyNanos, latencyCount, 0.99));
+            latency.put("p50Nanos", LatencyStatistics.percentile(latencyNanos, latencyCount, 0.50));
+            latency.put("p95Nanos", LatencyStatistics.percentile(latencyNanos, latencyCount, 0.95));
+            latency.put("p99Nanos", LatencyStatistics.percentile(latencyNanos, latencyCount, 0.99));
             latency.put("maxNanos", latencyNanos[latencyCount - 1]);
         }
         report.put("latency", latency);
@@ -195,10 +195,6 @@ public class ValidationRunner implements ApplicationRunner {
     private boolean atEnd(KafkaConsumer<String, String> consumer, Map<TopicPartition, Long> ends) {
         for (var entry : ends.entrySet()) if (consumer.position(entry.getKey()) < entry.getValue()) return false;
         return true;
-    }
-    private long percentile(long[] sorted, int count, double percentile) {
-        int index = Math.max(0, (int) Math.ceil(percentile * count) - 1);
-        return sorted[index];
     }
     private String required(ApplicationArguments args, String name) {
         if (!args.containsOption(name) || args.getOptionValues(name).isEmpty()) throw new IllegalArgumentException("--" + name + " is required");
