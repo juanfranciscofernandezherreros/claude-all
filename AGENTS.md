@@ -35,6 +35,23 @@ Esta regla es prioritaria y no se puede omitir:
 - Cada extracción/refactor debe preservar contratos funcionales, semántica de entrega Kafka y métricas; añadir pruebas de caracterización/contrato antes o junto al cambio.
 - En el resumen de cada tarea, indicar decisiones SOLID relevantes, excepciones justificadas y pruebas ejecutadas. No declarar cumplimiento global sin auditoría y evidencias.
 
+## Regla obligatoria: anotaciones Lombok y Spring
+Aplicar estas convenciones al código Java nuevo y al que se modifique:
+- Usar Lombok para boilerplate cuando reduzca código sin ocultar lógica: `@RequiredArgsConstructor` para constructor injection y `@Slf4j` para logging.
+- Usar `@Builder(setterPrefix = "with")` cuando un builder aporte valor real; no introducir builders mecánicamente.
+- Evitar `@Data`; preferir `@Getter` y `@Setter` explícitos según necesidad. Para POJOs de modelo simples puede usarse `@Getter`, `@Setter`, `@NoArgsConstructor`, `@AllArgsConstructor` y `@Builder(setterPrefix = "with")` solo si el contrato de serialización/mutabilidad lo permite.
+- Las entidades JPA pueden usar anotaciones Lombok/JPA, pero no deben contener comportamiento de negocio.
+- Prohibido `@Autowired` en producción: inyección por constructor. Inyección por campos solo se admite en tests existentes cuando simplifique fixtures; preferir constructor injection también en tests nuevos.
+- Usar `@RestController` en controladores web y el mapping HTTP que corresponda al contrato: `@GetMapping`, `@PostMapping`, `@PutMapping`, `@PatchMapping` o `@DeleteMapping`.
+- `@Service` se reserva para implementaciones de servicio `<Feature>ServiceImpl`; las interfaces, si existen por una frontera real, permanecen sin anotaciones. No crear interfaces solo para satisfacer esta convención.
+- No implementar repositorios Spring Data estándar manualmente ni añadir `@Repository` innecesarios. Usar `@Component` para beans genéricos y `@Configuration` para configuración.
+- Agrupar 3 o más propiedades relacionadas con `@ConfigurationProperties`; para menos propiedades puede usarse `@Value` cuando sea más simple y coherente con la configuración existente.
+- Usar `@Transactional` a nivel de clase en implementaciones de servicio como límite transaccional por defecto. `@Transactional(readOnly = true)` a nivel de método es válido para sobrescribir explícitamente ese default en operaciones de lectura. No añadir transacciones a listeners/consumidores Kafka sin validar cuidadosamente sus efectos sobre ACK, offsets y EOS.
+- Usar `@Validated` para validación de métodos/clases cuando proceda y `@RequestBody @Valid` para DTOs de escritura validados.
+- Usar `@PreAuthorize` a nivel de controlador cuando la seguridad por método esté habilitada.
+- Mantener dependencias acíclicas; no usar `@Order` para ocultar problemas de diseño.
+- Aplicar excepciones justificadas cuando la convención choque con PRD, contrato Kafka, compatibilidad/Jackson, JPA o arquitectura actual; documentar el motivo en el cambio. No añadir Lombok ni Spring Security/JPA solo para usar estas anotaciones.
+
 ## Política del launcher Windows
 - `RUN-KAFKA-LAB.bat` debe ser autónomo: detectar/iniciar Docker Desktop, esperar un máximo de 120 s, comprobar Compose v2 y ejecutar Docker Compose/benchmarks directamente.
 - No invocar Claude/Claude Code ni añadir `--dangerously-skip-permissions`, `--allow-dangerous`, ni otros bypasses de permisos.
