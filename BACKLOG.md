@@ -129,7 +129,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: definir bootstrap según entorno; key=messageId; serializer JSON; acks all; enable.idempotence true; retries compatibles; batch.size=PRODUCER_BATCH_BYTES; linger/compression externos.
   - Artefactos: KafkaProducerConfig y propiedades.
   - Prueba: inspeccionar configuración efectiva y publicar/leer mensaje de prueba.
-- [x] B04.2 **DONE — generador por bloques implementado con envíos asíncronos y espera de ACK por bloque; EXACTLY_ONCE agrupa cada bloque en una transacción. Pendiente prueba 10k y verificación de rendimiento.** Evidencia de implementación: commits `c8f47d4` y `3688502`; no ejecutado por falta de runtime Java/Kafka en esta sesión.
+- [x] B04.2 **DONE — generador por bloques implementado con envíos asíncronos y espera de ACK por bloque; EXACTLY_ONCE agrupa cada bloque en una transacción. Pendiente prueba 10k y verificación de rendimiento.** Evidencia: commits `c8f47d4`, `3688502`, `4a9381d`; CI anterior detectó y se corrigió el import de `PartitionInfo`; nueva CI pendiente.
   - Pasos: validar argumentos; crear runId; generar secuencias 1..N sin duplicar; construir payload con bytes exactos; agrupar envío en bloques de BATCH_SIZE registros; distribuir envío entre threads; usar callbacks/acks.
   - Artefactos: generator CLI, payload factory y documentación de flags.
   - Prueba: generar 10.000; contar IDs distintos y comprobar payload bytes y secuencia continua.
@@ -153,7 +153,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: validar DTO; medir inicio/fin; invocar workload; construir salida; publicar con key=messageId; esperar ACK antes de permitir commit.
   - Artefactos: MessageProcessor, OutputPublisher y listener.
   - Prueba: N entradas válidas producen N salidas con mismo ID/sequence y checksum esperado.
-- [x] B05.3 **DONE — retry/backoff y confirmación implementados; pendiente prueba de fallos.**
+- [x] B05.3 **DONE — retry/backoff y confirmación implementados; corregidos imports/API de backoff y metadata de grupo detectados por CI. Pendiente prueba de fallos y validar la recuperación transaccional.** Evidencia: commit `0f86781`; CI anterior reportó el error de API, nueva ejecución pendiente.
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
@@ -205,7 +205,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B08 — Validador independiente
 **Depende:** B04, B05.
-- [x] B08.1 **DONE — validador independiente y snapshot de offsets implementados; pendiente e2e.**
+- [x] B08.1 **DONE — validador independiente y snapshot de offsets implementados; corregido import de `PartitionInfo` detectado por CI; pendiente e2e.** Evidencia: commit `78cdcdb`; nueva CI pendiente.
   - Pasos: leer desde beginning para runId; determinar límites/end offsets; recorrer particiones hasta capturar todos los registros del run; excluir transacciones abortadas en EOS.
   - Artefactos: ValidationRunner y Kafka reader independiente.
   - Prueba: validador termina cuando alcanza los offsets objetivo y no depende de contadores internos del consumer.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [ ] B10.4 **BLOCKED — CI configurada; build, Docker y benchmark real pendientes.**
+- [ ] B10.4 **BLOCKED — CI configurada. Ejecución #62 falló en compilación Java por API/imports (backoff, ConsumerGroupMetadata y PartitionInfo); correcciones publicadas en `0f86781`, `4a9381d` y `78cdcdb`; pendiente confirmar nueva CI y después Docker/smoke/1M.**
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
