@@ -18,13 +18,18 @@ import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 
 @Configuration
 public class KafkaErrorHandlerConfiguration {
-    @Bean
-    DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> template, LabProperties properties,
-                                          ObjectMapper mapper, com.kafkalab.metrics.LabMetrics metrics) {
+    static ExponentialBackOffWithMaxRetries retryBackOff() {
         ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
         backOff.setInitialInterval(1000L);
         backOff.setMultiplier(2.0);
         backOff.setMaxInterval(10000L);
+        return backOff;
+    }
+
+    @Bean
+    DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> template, LabProperties properties,
+                                          ObjectMapper mapper, com.kafkalab.metrics.LabMetrics metrics) {
+        ExponentialBackOffWithMaxRetries backOff = retryBackOff();
 
         ConsumerAwareRecordRecoverer recoverer;
         boolean exactlyOnce = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
