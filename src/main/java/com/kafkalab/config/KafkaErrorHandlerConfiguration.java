@@ -2,6 +2,8 @@ package com.kafkalab.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafkalab.exception.KafkaPublishException;
+import com.kafkalab.exception.MessageSerializationException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kafkalab.model.DltMessage;
 import java.time.Instant;
 import java.util.Map;
@@ -39,11 +41,19 @@ public class KafkaErrorHandlerConfiguration {
                 try {
                     DltMessage dlt = new DltMessage(String.valueOf(record.value()), exception.getClass().getSimpleName(),
                             String.valueOf(exception.getMessage()), Instant.now());
-                    String json = mapper.writeValueAsString(dlt);
+                    String json;
+                    try {
+                        json = mapper.writeValueAsString(dlt);
+                    } catch (JsonProcessingException serializationFailure) {
+                        throw new MessageSerializationException("Could not serialize transactional DLT message", serializationFailure);
+                    }
                     template.executeInTransaction(operations -> {
                         try {
                             operations.send(properties.dltTopic(), String.valueOf(record.key()), json).get(30, TimeUnit.SECONDS);
-                        } catch (Exception e) {
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new KafkaPublishException("Interrupted while publishing transactional DLT record", e);
+                        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
                             throw new KafkaPublishException("Transactional DLT publish failed for topic " + properties.dltTopic(), e);
                         }
                         operations.sendOffsetsToTransaction(
@@ -51,6 +61,8 @@ public class KafkaErrorHandlerConfiguration {
                                 consumer.groupMetadata());
                         return true;
                     });
+                } catch (MessageSerializationException | KafkaPublishException e) {
+                    throw e;
                 } catch (Exception e) {
                     throw new KafkaPublishException("Could not recover failed record transactionally", e);
                 }
