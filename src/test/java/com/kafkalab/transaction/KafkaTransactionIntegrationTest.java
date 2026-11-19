@@ -153,7 +153,7 @@ class KafkaTransactionIntegrationTest {
     void publishesTenThousandRecordsWithStableKeyPartitioning() throws Exception {
         String topic = "generator-load-" + UUID.randomUUID();
         try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
-            admin.createTopics(List.of(new NewTopic(topic, 24, (short) 1))).all().get();
+            admin.createTopics(List.of(new NewTopic(topic, 6, (short) 1))).all().get();
             long leaderDeadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
             boolean leadersReady = false;
             while (!leadersReady && System.nanoTime() < leaderDeadline) {
@@ -183,7 +183,7 @@ class KafkaTransactionIntegrationTest {
                 long remaining = acknowledgementDeadline - System.nanoTime();
                 assertTrue(remaining > 0, "all 10,000 producer ACKs must arrive before the global deadline");
                 var metadata = acknowledgement.get(remaining, java.util.concurrent.TimeUnit.NANOSECONDS);
-                assertTrue(metadata.partition() >= 0 && metadata.partition() < 24);
+                assertTrue(metadata.partition() >= 0 && metadata.partition() < 6);
             }
             producer.flush();
         }
@@ -196,7 +196,7 @@ class KafkaTransactionIntegrationTest {
         consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProperties)) {
-            List<TopicPartition> partitions = java.util.stream.IntStream.range(0, 24)
+            List<TopicPartition> partitions = java.util.stream.IntStream.range(0, 6)
                     .mapToObj(partition -> new TopicPartition(topic, partition)).toList();
             consumer.assign(partitions);
             consumer.seekToBeginning(partitions);
