@@ -158,11 +158,11 @@ class KafkaTransactionIntegrationTest {
             boolean leadersReady = false;
             while (!leadersReady && System.nanoTime() < leaderDeadline) {
                 var description = admin.describeTopics(List.of(topic)).allTopicNames().get().get(topic);
-                leadersReady = description.partitions().size() == 24
+                leadersReady = description.partitions().size() == 6
                         && description.partitions().stream().allMatch(partition -> partition.leader() != null);
                 if (!leadersReady) Thread.sleep(100);
             }
-            assertTrue(leadersReady, "all 24 partitions must have elected leaders before publishing");
+            assertTrue(leadersReady, "all 6 partitions must have elected leaders before publishing");
         }
 
         Properties producerProperties = new Properties();
