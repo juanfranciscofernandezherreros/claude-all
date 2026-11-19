@@ -277,6 +277,21 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: inspeccionar diff/status; buscar secretos; comprobar .gitignore; verificar scripts; resumir baseline/optimizado y limitaciones; commit final.
   - Artefactos: cambios fuente limpios e informe agregado.
   - Prueba: git diff --check; git status sin temporales; comandos documentados reproducibles.
+### B10.6 — Estándar SOLID obligatorio
+- [x] B10.6 **DONE — estándar documentado y aplicado a las instrucciones del agente.** Añadido `docs/solid-principles.md` como guía del proyecto y referenciado desde `AGENTS.md`. Se mantiene la arquitectura Spring Boot por capas; no se introduce migración hexagonal ni interfaces mecánicas. Evidencia: commits `5171d12` y `655401b`.
+  - Pasos: incorporar los cinco principios; definir límites Spring Boot; añadir checklist y precedencia documental; fijar revisión SOLID para código nuevo/modificado.
+  - Artefactos: `docs/solid-principles.md`, `AGENTS.md`.
+  - Prueba: revisión de consistencia con PRD/AGENTS y confirmación de que la guía no exige nuevas dependencias ni cambios funcionales.
+
+### B10.7 — Auditoría y refactor SOLID del código existente
+- [ ] B10.7 **BLOCKED — refactor parcial; quedan responsabilidades por separar y CI pendiente.** Primera inspección: `InputMessageListener` combinaba deserialización, validación de entrada, política de procesamiento, publicación Kafka, gestión de offsets y métricas; `GeneratorRunner` combina CLI, concurrencia, serialización, publicación y snapshots de offsets; `ValidationRunner` combina lectura Kafka, validación de contrato/integridad, estadísticas y escritura de informes. No crear interfaces hasta identificar contratos reales.
+  - [x] B10.7.1 **DONE — pendiente de verificación CI.** Extraída la política de validación y transformación a `InputMessageProcessor`; el listener queda como adaptador de deserialización, transporte Kafka, ACK/offset y métricas. Tests del listener adaptados para conservar casos de JSON inválido, DLT, salida válida y no-ACK ante fallo de publicación. Commits: `038e5ea`, `ef1caff`, `134eb35`, `256ac17`. No se ha ejecutado Maven localmente.
+  - [ ] B10.7.2 **BLOCKED — pendiente.** Separar responsabilidades de generación solo donde tengan ciclo de cambio independiente, manteniendo orden, timeout global, paralelismo, snapshot de offsets y claves deterministas.
+  - [ ] B10.7.3 **BLOCKED — pendiente.** Separar lectura Kafka, validación de contrato/integridad, estadísticas y escritura de informes sin aumentar memoria ni cambiar aislamiento por runId.
+  - [ ] B10.7.4 **BLOCKED — pendiente.** Revisar DIP/ISP/OCP y contratos de implementaciones donde haya variaciones reales; añadir pruebas de contrato compartidas cuando existan implementaciones intercambiables.
+  - Artefactos: clases Java afectadas y tests JUnit/Testcontainers existentes o ampliados; actualizar README/PRD solo si cambia comportamiento (no previsto).
+  - Prueba: `./mvnw -B clean verify`; pruebas de contrato para offsets/ACK, DLT y transacciones EOS; smoke CI del flujo; comparar artefactos y métricas antes/después. No aceptar regresiones ni afirmar mejora de rendimiento sin medición.
+
 **Aceptación final:** PRD Definition of Done satisfecho; instrucciones funcionan desde clon limpio; informe final distingue ejecutado, fallido y bloqueado.
 
 ## Grafo resumido

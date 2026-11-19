@@ -11,6 +11,7 @@ import com.kafkalab.model.DltMessage;
 import com.kafkalab.model.InputMessage;
 import com.kafkalab.model.OutputMessage;
 import com.kafkalab.processing.ChecksumService;
+import com.kafkalab.processing.InputMessageProcessor;
 import com.kafkalab.processing.WorkloadProcessor;
 import com.kafkalab.producer.OutputPublisher;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -42,8 +43,9 @@ class InputMessageListenerTest {
         LabProperties properties = new LabProperties(100, 24, 1, 500, 65536, 4, 1024,
                 LabProperties.DeliveryMode.AT_LEAST_ONCE, LabProperties.Workload.LIGHT,
                 "input-topic", "output-topic", "dlt-topic");
-        listener = new InputMessageListener(mapper, factory.getValidator(), properties,
-                new ChecksumService(), new WorkloadProcessor(), publisher,
+        InputMessageProcessor processor = new InputMessageProcessor(factory.getValidator(), properties,
+                new WorkloadProcessor(), new ChecksumService());
+        listener = new InputMessageListener(mapper, properties, processor, publisher,
                 mock(KafkaTemplate.class), metrics, registry);
     }
 

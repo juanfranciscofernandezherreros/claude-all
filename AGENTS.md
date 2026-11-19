@@ -26,6 +26,15 @@ Esta regla es prioritaria y no se puede omitir:
 - Al completar un micro-paso, registrar evidencia breve; al completar la tarea padre, sincronizar checkbox, estado y evidencia.
 - Antes de cerrar cada sesión, revisar que todas las tareas completadas durante ella tengan `[x]`. Una tarea completada nunca debe quedarse accidentalmente con `[ ]`.
 
+## Regla obligatoria de diseño SOLID
+- Aplicar `docs/solid-principles.md` a toda funcionalidad nueva y a todo componente Java modificado de forma sustancial.
+- Antes de implementar, inspeccionar responsabilidades, dependencias, variaciones esperadas y contratos existentes.
+- Revisar SRP, OCP, LSP, ISP y DIP en cada cambio; marcar un principio como no aplicable cuando no exista una frontera o variación real.
+- Mantener la arquitectura Spring Boot por capas y los paquetes existentes. No migrar a hexagonal, añadir microservicios ni crear interfaces por convención sin una necesidad demostrable y compatible con PRD.
+- Preferir inyección por constructor y composición. Controladores/adaptadores traducen protocolos; los casos de uso coordinan; productores/consumidores aíslan el transporte; mappers no realizan I/O.
+- Cada extracción/refactor debe preservar contratos funcionales, semántica de entrega Kafka y métricas; añadir pruebas de caracterización/contrato antes o junto al cambio.
+- En el resumen de cada tarea, indicar decisiones SOLID relevantes, excepciones justificadas y pruebas ejecutadas. No declarar cumplimiento global sin auditoría y evidencias.
+
 ## Política del launcher Windows
 - `RUN-KAFKA-LAB.bat` debe ser autónomo: detectar/iniciar Docker Desktop, esperar un máximo de 120 s, comprobar Compose v2 y ejecutar Docker Compose/benchmarks directamente.
 - No invocar Claude/Claude Code ni añadir `--dangerously-skip-permissions`, `--allow-dangerous`, ni otros bypasses de permisos.
