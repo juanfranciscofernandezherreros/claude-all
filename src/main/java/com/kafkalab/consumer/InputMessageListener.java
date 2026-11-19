@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafkalab.config.LabProperties;
 import com.kafkalab.exception.InvalidInputMessageException;
+import com.kafkalab.exception.KafkaPublishException;
+import com.kafkalab.exception.MessageSerializationException;
 import com.kafkalab.metrics.LabMetrics;
 import com.kafkalab.model.DltMessage;
 import com.kafkalab.model.InputMessage;
@@ -72,7 +74,7 @@ public class InputMessageListener {
             publishAndCommit(properties.outputTopic(), input.messageId(), mapper.writeValueAsString(output),
                     record, consumer, acknowledgment);
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Could not serialize output", e);
+            throw new MessageSerializationException("Could not serialize output message " + input.messageId(), e);
         }
         metrics.outputPublished();
         metrics.recordEndToEnd(Duration.between(input.createdAt(), output.processedAt()));
@@ -88,7 +90,7 @@ public class InputMessageListener {
                     mapper.writeValueAsString(dlt), record, consumer, acknowledgment);
             metrics.deadLetter();
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Could not serialize dead-letter message", e);
+            throw new MessageSerializationException("Could not serialize dead-letter message", e);
         }
     }
 
@@ -99,7 +101,7 @@ public class InputMessageListener {
                 try {
                     operations.send(topic, key, value).get(30, TimeUnit.SECONDS);
                 } catch (Exception e) {
-                    throw new IllegalStateException("Transactional Kafka publish failed", e);
+                    throw new KafkaPublishException("Transactional Kafka publish failed for topic " + topic, e);
                 }
                 operations.sendOffsetsToTransaction(
                         Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
