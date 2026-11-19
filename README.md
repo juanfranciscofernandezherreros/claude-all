@@ -40,7 +40,7 @@ No uses `docker compose down -v` salvo que quieras borrar expresamente los datos
 | Benchmark principal | `scripts\run-benchmark.bat 1000000` | `bash scripts/run-benchmark.sh 1000000` |
 | Suite completa | `scripts\run-full-suite.bat` | `bash scripts/run-full-suite.sh` |
 
-El benchmark principal ejecuta un warm-up de 10.000 mensajes y tres repeticiones medidas para concurrencias 1, 2, 5, 10 y 20. **Limitación actual:** `run-full-suite` todavía no ejecuta la matriz secundaria completa; por ahora lanza el benchmark principal. No interpretes su ejecución como cobertura de todos los payloads, workloads o modos de entrega. La matriz secundaria queda pendiente de implementación (B09.3).
+El benchmark principal ejecuta un warm-up de 10.000 mensajes y tres repeticiones medidas para concurrencias 1, 2, 5, 10 y 20. `run-full-suite` ejecuta el benchmark principal y después 10 escenarios secundarios: cinco tamaños de payload, tres workloads y dos modos de entrega. Los escenarios secundarios usan 100.000 mensajes por repetición por defecto; puedes cambiarlo con `SECONDARY_MESSAGES`. La matriz aún debe contrastarse con el PRD y ejecutarse en el entorno objetivo (B09.3).
 
 Para compilar y probar desde el host:
 
