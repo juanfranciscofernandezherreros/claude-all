@@ -98,7 +98,8 @@ public class InputMessageListener {
 
     private void publishAndCommit(String topic, String key, String value, ConsumerRecord<String, String> record,
                                   Consumer<?, ?> consumer, Acknowledgment acknowledgment) {
-        if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
+        boolean isExactlyOnceDeliveryEnabled = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
+        if (isExactlyOnceDeliveryEnabled) {
             kafkaTemplate.executeInTransaction(operations -> {
                 try {
                     operations.send(topic, key, value).get(30, TimeUnit.SECONDS);
