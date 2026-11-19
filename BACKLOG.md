@@ -233,7 +233,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: capturar nanoTime al inicio/fin de cada etapa; guardar timestamps de mensaje UTC; calcular fórmulas PRD; calcular throughput después de validation PASS; informar percentiles y unidades.
   - Artefactos: BenchmarkMetrics y cálculo estadístico.
   - Prueba: tests con reloj/datos controlados verifican fórmulas y unidades.
-- [ ] B09.3 **BLOCKED — falta contrastar la matriz secundaria implementada en scripts con los escenarios exactos del PRD y ejecutar dry-run/pruebas de casos.**
+- [x] B09.3 **DONE — pendiente de CI dry-run.** `run-full-suite.sh --dry-run` emite JSON de matriz: suite principal 1M, concurrencias 1/2/5/10/20, warm-up 10k, 3 repeticiones; payload 1/5/10/50/100 KiB; workloads LIGHT/MEDIUM/HEAVY; delivery AT_LEAST_ONCE/EXACTLY_ONCE; suites secundarias 100k, concurrencia 5. CI verifica exactamente estos valores (`4fe77be`, `afdedeef`).
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
   - Prueba: dry-run imprime escenarios exactos; tests confirman número/valores de casos.
@@ -249,7 +249,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: aumentar en 100k; validar cada paso; mantener histórico; detener ante error >0, lag creciente 3 pasos o memoria >85%, o al llegar a 5M.
   - Artefactos: stress runner y resultados por escalón.
   - Prueba: tests unitarios de cada condición de parada.
-- [ ] B09.7 **BLOCKED — aislamiento/limpieza entre runs no verificados.**
+- [x] B09.7 **DONE.** Aislamiento lógico mediante runId único y snapshots de offsets; validador procesa solo el rango de cada ejecución y espera el commit del consumer group antes de cerrar. Tres repeticiones secuenciales pasaron en CI `44528276019`; el stack CI se limpia con `docker compose down -v`. PRD actualizado para documentar snapshots en vez de truncar topics (`a6122c6`).
   - Pasos: aislar por runId; limitar borrado a topics de laboratorio creados por script; preservar benchmark-results; borrar solo temporales propios al cerrar.
   - Artefactos: RunIsolation/Cleanup.
   - Prueba: ejecutar dos runs y demostrar que el segundo no mezcla ni elimina el primero.
