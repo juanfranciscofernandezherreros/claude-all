@@ -40,14 +40,14 @@ No uses `docker compose down -v` salvo que quieras borrar expresamente los datos
 | Benchmark principal | `scripts\run-benchmark.bat 1000000` | `bash scripts/run-benchmark.sh 1000000` |
 | Suite completa | `scripts\run-full-suite.bat` | `bash scripts/run-full-suite.sh` |
 
-El benchmark principal ejecuta un warm-up de 10.000 mensajes y tres repeticiones medidas para concurrencias 1, 2, 5, 10 y 20. La suite completa añade escenarios de payload (1/5/10/50/100 KiB), carga LIGHT/MEDIUM/HEAVY y entrega AT_LEAST_ONCE/EXACTLY_ONCE. Los escenarios secundarios usan 100.000 mensajes por repetición por defecto. Puedes cambiarlo con `SECONDARY_MESSAGES`.
+El benchmark principal ejecuta un warm-up de 10.000 mensajes y tres repeticiones medidas para concurrencias 1, 2, 5, 10 y 20. **Limitación actual:** `run-full-suite` todavía no ejecuta la matriz secundaria completa; por ahora lanza el benchmark principal. No interpretes su ejecución como cobertura de todos los payloads, workloads o modos de entrega. La matriz secundaria queda pendiente de implementación (B09.3).
 
 Para compilar y probar desde el host:
 
 - Windows: `mvnw.cmd clean verify`
 - Linux/macOS: `bash ./mvnw -B clean verify`
 
-El wrapper descarga Maven 3.9.9 en el perfil local del usuario. GitHub Actions ejecuta la misma verificación con Java 21 y valida la configuración de Compose.
+Los scripts `mvnw`/`mvnw.cmd` descargan Maven 3.9.9 en el perfil local del usuario; son bootstrap scripts del repositorio, no incluyen el JAR oficial de Maven Wrapper. GitHub Actions ejecuta la misma verificación con Java 21 y valida la configuración de Compose.
 
 ## Arquitectura y flujo
 
@@ -58,7 +58,7 @@ El wrapper descarga Maven 3.9.9 en el perfil local del usuario. GitHub Actions e
 
 Flujo: generador → `input-topic` → consumer → SHA-256/workload → `output-topic`. Mensajes inválidos o fallos permanentes se contabilizan en `input-dlt-topic`. El consumer espera el ACK del productor antes de confirmar offsets en AT_LEAST_ONCE. En EXACTLY_ONCE, salida y offset se publican en una transacción Kafka y los lectores usan `read_committed`.
 
-El validador es un proceso separado: captura offsets de inicio, lee solo el rango de la ejecución y compara secuencias, duplicados, ausencias, extras, esquema y checksum contra los mensajes de entrada. La memoria de checksum se acota al número esperado de mensajes.
+El validador es un proceso separado: captura offsets de inicio, lee solo el rango de la ejecución y compara secuencias, duplicados, ausencias, extras, esquema y checksum contra los mensajes de entrada. **Limitación conocida:** la implementación actual mantiene estructuras de checksum/IDs en memoria proporcional al número de mensajes; la comparación en disco o streaming está pendiente (B08.2).
 
 ## Puertos locales
 
@@ -90,8 +90,11 @@ Copia `.env.example` a `.env` y modifica solo lo necesario. Los valores predeter
 | `WORKLOAD` | LIGHT | LIGHT=1, MEDIUM=10, HEAVY=100 rondas SHA-256 |
 | `COMPRESSION_TYPE` | none | Compresión del productor Kafka |
 | `LINGER_MS` | 5 | Espera del productor en milisegundos |
+| `KAFKA_BOOTSTRAP_SERVERS` | localhost:9094 | Bootstrap Kafka visto desde el host; dentro de Compose la app usa el listener interno configurado |
+| `APP_PORT` | 8080 | Puerto HTTP de Spring Boot |
+| `KAFKA_ISOLATION_LEVEL` | read_committed | Aislamiento del consumer Kafka (`read_committed` o `read_uncommitted`) |
 
-No se usan sleeps artificiales en el procesamiento. Las variables se validan al arrancar.
+No se usan sleeps artificiales en el procesamiento. Rangos: `MESSAGES` > 0; `PARTITIONS` = 24; `CONCURRENCY` = 1/2/5/10/20; `BATCH_SIZE` = 1–10000; `PRODUCER_BATCH_BYTES` > 0; `GENERATOR_THREADS` = 1–64; `PAYLOAD_BYTES` = 1024/5120/10240/51200/102400. `DELIVERY_MODE` y `WORKLOAD` aceptan los enums indicados. `COMPRESSION_TYPE`, `LINGER_MS`, `APP_PORT`, `KAFKA_BOOTSTRAP_SERVERS` y `KAFKA_ISOLATION_LEVEL` se pasan a Spring/Kafka y deben ser compatibles con sus respectivas configuraciones. Las variables de Compose se interpolan desde `.env`; los valores de Spring tienen defaults equivalentes. Las variables se validan al arrancar cuando están mapeadas a `LabProperties`.
 
 ## Resultados
 
