@@ -103,7 +103,7 @@ Cada ejecución medida crea `benchmark-results/<runId>/` con:
 - `summary.json`: configuración, tiempos, throughput validado y latencias.
 - `results.csv`: tabla agregada de escenarios.
 - `validation.json`: integridad independiente (expected, valid, missing, duplicate, unexpected, invalid y DLT).
-- `environment.json`: SO, arquitectura, CPU lógica, Java, Docker, memoria del contenedor, heap JVM, pausas GC y lag del consumer cuando las métricas están disponibles. Los recursos se capturan como una muestra al final de cada repetición (memoria instantánea, no pico); los contadores de GC son acumulados desde el arranque de la app. Los valores no disponibles aparecen como null.
+- `environment.json`: SO, arquitectura, CPU lógica, Java, Docker, memoria del contenedor, heap JVM, pausas GC y lag del consumer cuando las métricas están disponibles. `prometheus-metrics.txt` conserva el scrape bruto usado para esos valores. Los recursos se capturan como una muestra al final de cada repetición (memoria instantánea, no pico); los contadores de GC son acumulados desde el arranque de la app. Los valores no disponibles aparecen como null.
 - `execution.log`: salida del generador.
 - `report.md`: resumen legible.
 
