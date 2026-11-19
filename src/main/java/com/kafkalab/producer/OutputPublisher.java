@@ -5,6 +5,8 @@ import com.kafkalab.metrics.LabMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +24,10 @@ public class OutputPublisher {
         Timer.Sample sample = metrics.startPublishing(registry);
         try {
             template.send(topic, key, json).get(30, TimeUnit.SECONDS);
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new KafkaPublishException("Interrupted while publishing Kafka message for key " + key, e);
+        } catch (ExecutionException | TimeoutException e) {
             throw new KafkaPublishException("Kafka publish was not acknowledged for key " + key, e);
         } finally {
             metrics.stopPublishing(sample);
