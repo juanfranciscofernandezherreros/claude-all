@@ -24,6 +24,16 @@ jobs:
         run: chmod +x mvnw
       - name: Check shell syntax
         run: bash -n scripts/*.sh
+      - name: Verify generated files are ignored
+        run: |
+          mkdir -p target benchmark-results/run-check kafka-data
+          touch target/classes.tmp .env benchmark-results/run-check/execution.log
+          touch benchmark-results/run-check/offsets.json benchmark-results/run-check/resource-samples.json
+          touch benchmark-results/run-check/prometheus-metrics.txt kafka-data/segment.log
+          for path in target/classes.tmp .env benchmark-results/run-check/execution.log benchmark-results/run-check/offsets.json benchmark-results/run-check/resource-samples.json benchmark-results/run-check/prometheus-metrics.txt kafka-data/segment.log; do
+            git check-ignore -q "$path" || { echo "Expected ignored path: $path"; exit 1; }
+          done
+          if git check-ignore -q .env.example; then echo ".env.example must remain trackable"; exit 1; fi
       - name: Test stress stop policy
         run: |
           python3 -m py_compile scripts/stress_runner.py scripts/stress_policy.py
