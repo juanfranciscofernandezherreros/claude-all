@@ -153,7 +153,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: validar DTO; medir inicio/fin; invocar workload; construir salida; publicar con key=messageId; esperar ACK antes de permitir commit.
   - Artefactos: MessageProcessor, OutputPublisher y listener.
   - Prueba: N entradas válidas producen N salidas con mismo ID/sequence y checksum esperado.
-- [x] B05.3 **DONE — pendiente de verificación funcional.** Backoff/recoverer compilan en CI `bf6acc9`; falta probar reintentos, DLT y offsets en ambos modos. La rama EXACTLY_ONCE del recoverer aún requiere prueba real de grupo.
+- [x] B05.3 **DONE — pendiente de verificación funcional.** Backoff/recoverer compilan en CI `bf6acc9`; el recoverer EXACTLY_ONCE usa ahora `ConsumerAwareRecordRecoverer` y `consumer.groupMetadata()` (`9dcb7580`) en vez de fabricar metadata de grupo. Falta probar reintentos, DLT y offsets en ambos modos.
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
@@ -177,7 +177,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: iniciar transacción; enviar salida; enviar offsets del consumer group a transacción; commit; ante excepción abortar; no hacer commit manual fuera de transacción.
   - Artefactos: TransactionalMessageHandler.
   - Prueba: salida y offset avanzan juntos o ninguno avanza.
-- [x] B06.3 **DONE — pendiente de verificación.** Test de atomicidad escrito; en CI `bf6acc9` se omitió porque Testcontainers 1.20.6 negocia Docker API 1.32 y el runner exige 1.40. Se actualizó Testcontainers a 1.21.3 en `cfa156a`; falta confirmar ejecución del contenedor, abort y restart.
+- [x] B06.3 **DONE — pendiente de verificación.** Test de atomicidad escrito; en CI `bf6acc9` se omitió porque Testcontainers 1.20.6 negocia Docker API 1.32 y el runner exige 1.40. La actualización a 1.21.3 (`cfa156a`) no resolvió el Docker API 1.32; actualizado a 1.21.4 (`b896007`) que incorpora soporte para Docker Engine 29. Falta confirmar ejecución del contenedor, abort y restart.
   - Pasos: caso éxito; fallo antes del commit; caída/reinicio; lectura con read_committed y read_uncommitted para demostrar diferencia.
   - Artefactos: tests Testcontainers.
   - Prueba: registros abortados invisibles en read_committed y offsets coherentes.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente de verificación de integración.** CI `bf6acc9` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests ejecutados, 7 pasaron y el test Testcontainers fue omitido por incompatibilidad Docker API (1.32 vs 1.40). `docker compose config --quiet` pasó. Testcontainers actualizado a 1.21.3 (`cfa156a`); workflow actualizado a actions v5 y añade `docker version` (`d9e1380`). Pendiente CI nueva con test de integración, smoke y benchmark 1M.
+- [x] B10.4 **DONE — pendiente de verificación de integración.** CI `bf6acc9` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests ejecutados, 7 pasaron y el test Testcontainers fue omitido por incompatibilidad Docker API (1.32 vs 1.40). `docker compose config --quiet` pasó. Testcontainers 1.21.3 aún falló por API Docker 1.32; versión actualizada a 1.21.4 (`b896007`). Workflow usa actions v5 y registra `docker version` (`d9e1380`). Pendiente CI nueva con test de integración, smoke y benchmark 1M.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
