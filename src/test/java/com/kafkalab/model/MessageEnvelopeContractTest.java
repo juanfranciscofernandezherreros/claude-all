@@ -30,12 +30,12 @@ class MessageEnvelopeContractTest {
 
     @Test
     void dltMessageJsonKeepsOriginalPayloadAndFailureMetadata() throws Exception {
-        DltMessage dlt = new DltMessage("{\"messageId\":\"run-2\"}", "IllegalArgumentException",
+        DltMessage dlt = new DltMessage("{\"messageId\":\"run-2\"}", "InvalidInputMessageException",
                 "invalid payload", Instant.parse("2025-01-01T00:00:01Z"));
 
         JsonNode json = mapper.readTree(mapper.writeValueAsBytes(dlt));
         assertTrue(json.has("originalPayload"));
-        assertEquals("IllegalArgumentException", json.path("errorType").asText());
+        assertEquals("InvalidInputMessageException", json.path("errorType").asText());
         assertEquals("invalid payload", json.path("errorMessage").asText());
         assertTrue(json.has("failedAt"));
         assertEquals(dlt, mapper.treeToValue(json, DltMessage.class));
