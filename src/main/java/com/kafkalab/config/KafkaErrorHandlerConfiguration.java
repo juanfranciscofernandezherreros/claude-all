@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
-import org.springframework.util.backoff.FixedBackOff;
+import org.springframework.util.backoff.ExponentialBackOffWithMaxRetries;
 
 @Configuration
 public class KafkaErrorHandlerConfiguration {
@@ -14,6 +14,10 @@ public class KafkaErrorHandlerConfiguration {
     DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> template, LabProperties properties) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
                 template, (record, exception) -> new TopicPartition(properties.dltTopic(), record.partition()));
-        return new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 3L));
+        ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
+        backOff.setInitialInterval(1000L);
+        backOff.setMultiplier(2.0);
+        backOff.setMaxInterval(10000L);
+        return new DefaultErrorHandler(recoverer, backOff);
     }
 }
