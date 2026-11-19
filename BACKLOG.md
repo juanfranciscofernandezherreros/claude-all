@@ -125,7 +125,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B04 — Productor y generador
 **Depende:** B02, B03.
-- [x] B04.1 **DONE — configuración escrita; pendiente inspección efectiva/publicación.**
+- [x] B04.1 **DONE.** Producer Kafka configurado con bootstrap externo/interno, key=messageId, JSON serializer, acks=all, idempotencia, retries, batch bytes, linger y compresión. CI `44537286874` levantó stack y smoke de tres repeticiones PASS; generación/ACK reales confirmados.
   - Pasos: definir bootstrap según entorno; key=messageId; serializer JSON; acks all; enable.idempotence true; retries compatibles; batch.size=PRODUCER_BATCH_BYTES; linger/compression externos.
   - Artefactos: KafkaProducerConfig y propiedades.
   - Prueba: inspeccionar configuración efectiva y publicar/leer mensaje de prueba.
@@ -173,7 +173,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: prefijo transaccional por instancia; producer factory transaccional; aislamiento read_committed en validadores/consumidores; evitar IDs transaccionales duplicados.
   - Artefactos: TransactionConfig y perfiles de entrega.
   - Prueba: dos instancias obtienen transactional IDs distintos y consumidores no ven registros abortados.
-- [x] B06.2 **DONE — transacción salida+offset implementada; pendiente verificación de API/rollback.**
+- [x] B06.2 **DONE.** Testcontainers verifica envío de output + offset en la misma transacción, abort/retry sin output duplicado visible `read_committed`, DLT + offset transaccional y restart sin replay (`8148554d`); CI `44536265855` superó `clean verify`.
   - Pasos: iniciar transacción; enviar salida; enviar offsets del consumer group a transacción; commit; ante excepción abortar; no hacer commit manual fuera de transacción.
   - Artefactos: TransactionalMessageHandler.
   - Prueba: salida y offset avanzan juntos o ninguno avanza.
