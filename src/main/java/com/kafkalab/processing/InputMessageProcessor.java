@@ -1,6 +1,7 @@
 package com.kafkalab.processing;
 
 import com.kafkalab.config.LabProperties;
+import com.kafkalab.exception.InvalidInputMessageException;
 import com.kafkalab.model.InputMessage;
 import com.kafkalab.model.OutputMessage;
 import jakarta.validation.ConstraintViolation;
@@ -49,7 +50,7 @@ public class InputMessageProcessor {
             if (reason.isBlank()) {
                 reason = "Unsupported schemaVersion or eventType";
             }
-            throw new IllegalArgumentException(reason);
+            throw new InvalidInputMessageException(reason);
         }
 
         Instant processedAt = Instant.now();
