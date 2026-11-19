@@ -229,7 +229,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: generar runId nuevo por repetición; evitar borrar topics compartidos/volúmenes; filtrar por runId o recrear topics dedicados de forma controlada; ejecutar warm-up no medido; ejecutar 3 repeticiones secuenciales.
   - Artefactos: BenchmarkRunner y manifiesto de ejecución.
   - Prueba: runIds únicos, warm-up excluido y tres resultados independientes.
-- [x] B09.2 **DONE — publish y percentiles de latencia implementados; pendiente test de fórmulas y precisión monotónica.**
+- [x] B09.2 **DONE — publish y percentiles de latencia implementados; con tests de fórmulas y precisión monotónica añadidos; pendiente CI.**
   - Pasos: capturar nanoTime al inicio/fin de cada etapa; guardar timestamps de mensaje UTC; calcular fórmulas PRD; calcular throughput después de validation PASS; informar percentiles y unidades.
   - Artefactos: BenchmarkMetrics y cálculo estadístico.
   - Prueba: tests con reloj/datos controlados verifican fórmulas y unidades.
