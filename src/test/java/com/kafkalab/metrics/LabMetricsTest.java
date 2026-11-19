@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test;
 class LabMetricsTest {
     @Test
     void recordsCountersForInputOutputFailuresRetriesAndDeadLetters() {
-        try (SimpleMeterRegistry registry = new SimpleMeterRegistry()) {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        {
             LabMetrics metrics = new LabMetrics(registry);
             metrics.inputReceived();
             metrics.inputReceived();
@@ -30,7 +31,8 @@ class LabMetricsTest {
 
     @Test
     void recordsProcessingPublishingAndNonNegativeEndToEndDurations() {
-        try (SimpleMeterRegistry registry = new SimpleMeterRegistry()) {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        {
             LabMetrics metrics = new LabMetrics(registry);
             metrics.stopProcessing(metrics.startProcessing(registry));
             metrics.stopPublishing(metrics.startPublishing(registry));
