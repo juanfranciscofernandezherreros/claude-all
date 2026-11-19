@@ -71,8 +71,8 @@ environment={"os":platform.platform(),"architecture":platform.machine(),"process
              "heapUsedBytes":metric_sum("jvm_memory_used_bytes", 'area="heap"'),
              "gcPauseCount":metric_sum("jvm_gc_pause_seconds_count"),
              "gcPauseSeconds":metric_sum("jvm_gc_pause_seconds_sum"),
-             "kafkaConsumerLag":lag_value,
-             "resourceSample":"single snapshot after validation; null means metric unavailable"}
+             "kafkaConsumerLag":lag_value,"gcMetricScope":"cumulative since application start",
+             "resourceSample":"single snapshot after validation; memory is not peak; null means metric unavailable"}
 summary={"scenario":name,"runId":generated["runId"],"concurrency":int(concurrency),"messages":int(messages),"payloadBytes":int(payload),"workload":workload,"deliveryMode":delivery,"publishSeconds":generated["publishSeconds"],"endToEndSeconds":end_to_end,"validatedUniqueOutputs":validation["valid"],"throughputPerSecond":throughput,"validation":validation["status"],"latency":validation["latency"]}
 with open(folder+"/summary.json","w",encoding="utf-8") as f: json.dump(summary,f,indent=2)
 with open(folder+"/environment.json","w",encoding="utf-8") as f: json.dump(environment,f,indent=2)
