@@ -2,6 +2,7 @@ package com.kafkalab.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafkalab.config.LabProperties;
+import com.kafkalab.exception.GenerationFailedException;
 import com.kafkalab.model.InputMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,7 +127,7 @@ public class GeneratorRunner implements ApplicationRunner {
         try {
             return mapper.writeValueAsString(message);
         } catch (Exception e) {
-            throw new CompletionException("Could not serialize generated message", e);
+            throw new GenerationFailedException("Could not serialize generated message", e);
         }
     }
 
@@ -134,8 +135,11 @@ public class GeneratorRunner implements ApplicationRunner {
         for (Future<?> acknowledgement : acknowledgements) {
             try {
                 acknowledgement.get(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS);
-            } catch (Exception e) {
-                throw new CompletionException("Kafka did not acknowledge the generated batch before the global timeout", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new GenerationFailedException("Interrupted while waiting for Kafka acknowledgements", e);
+            } catch (ExecutionException | TimeoutException e) {
+                throw new GenerationFailedException("Kafka did not acknowledge the generated batch before the global timeout", e);
             }
         }
     }
