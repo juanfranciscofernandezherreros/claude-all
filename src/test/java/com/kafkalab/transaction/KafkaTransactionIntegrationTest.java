@@ -216,4 +216,114 @@ class KafkaTransactionIntegrationTest {
         }
     }
 
+    @Test
+    void validatorClassifiesKnownMissingDuplicateUnexpectedCorruptAndDltFixtures() throws Exception {
+        String runId = "validator-fixture-" + UUID.randomUUID();
+        String inputTopic = "validator-input-" + UUID.randomUUID();
+        String outputTopic = "validator-output-" + UUID.randomUUID();
+        String dltTopic = "validator-dlt-" + UUID.randomUUID();
+        try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
+            admin.createTopics(List.of(new NewTopic(inputTopic, 1, (short) 1),
+                    new NewTopic(outputTopic, 1, (short) 1), new NewTopic(dltTopic, 1, (short) 1))).all().get();
+        }
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+                new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        com.kafkalab.processing.ChecksumService checksums = new com.kafkalab.processing.ChecksumService();
+        String payload = "x".repeat(1024);
+        java.time.Instant created = java.time.Instant.parse("2025-01-01T00:00:00Z");
+        com.kafkalab.model.InputMessage input = new com.kafkalab.model.InputMessage(1, runId + "-1",
+                created, "BENCHMARK", new com.kafkalab.model.InputMessage.Payload(1, payload));
+        com.kafkalab.model.InputMessage deadLetterInput = new com.kafkalab.model.InputMessage(1, runId + "-3",
+                created, "BENCHMARK", new com.kafkalab.model.InputMessage.Payload(3, payload));
+        com.kafkalab.model.OutputMessage valid = new com.kafkalab.model.OutputMessage(1, runId + "-1",
+                created, created.plusMillis(2), "OK",
+                new com.kafkalab.model.OutputMessage.Result(1, checksums.sha256(payload)));
+        com.kafkalab.model.OutputMessage unexpected = new com.kafkalab.model.OutputMessage(1, runId + "-4",
+                created, created.plusMillis(3), "OK",
+                new com.kafkalab.model.OutputMessage.Result(4, checksums.sha256(payload)));
+
+        try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProperties(KAFKA.getBootstrapServers()))) {
+            producer.send(new ProducerRecord<>(inputTopic, input.messageId(), mapper.writeValueAsString(input))).get();
+            producer.send(new ProducerRecord<>(outputTopic, valid.messageId(), mapper.writeValueAsString(valid))).get();
+            producer.send(new ProducerRecord<>(outputTopic, valid.messageId(), mapper.writeValueAsString(valid))).get();
+            producer.send(new ProducerRecord<>(outputTopic, unexpected.messageId(), mapper.writeValueAsString(unexpected))).get();
+            producer.send(new ProducerRecord<>(outputTopic, "corrupt", "{not-json")).get();
+            com.kafkalab.model.DltMessage dlt = new com.kafkalab.model.DltMessage(
+                    mapper.writeValueAsString(deadLetterInput), "IllegalArgumentException", "fixture", created);
+            producer.send(new ProducerRecord<>(dltTopic, runId + "-3", mapper.writeValueAsString(dlt))).get();
+        }
+
+        TopicPartition inputPartition = new TopicPartition(inputTopic, 0);
+        Properties groupProperties = consumerProperties(KAFKA.getBootstrapServers(), "kafka-lab");
+        try (KafkaConsumer<String, String> groupConsumer = new KafkaConsumer<>(groupProperties)) {
+            groupConsumer.assign(List.of(inputPartition));
+            groupConsumer.seekToEnd(List.of(inputPartition));
+            long committedEnd = groupConsumer.position(inputPartition);
+            groupConsumer.commitSync(Map.of(inputPartition, new OffsetAndMetadata(committedEnd)));
+        }
+
+        Path runFolder = Path.of("benchmark-results", runId);
+        java.nio.file.Files.createDirectories(runFolder);
+        List<Map<String, Object>> snapshot = List.of(
+                Map.of("topic", inputTopic, "partition", 0, "offset", 0L),
+                Map.of("topic", outputTopic, "partition", 0, "offset", 0L),
+                Map.of("topic", dltTopic, "partition", 0, "offset", 0L));
+        mapper.writerWithDefaultPrettyPrinter().writeValue(runFolder.resolve("offsets.json").toFile(), snapshot);
+
+        com.kafkalab.config.LabProperties labProperties = new com.kafkalab.config.LabProperties(
+                3, 24, 1, 500, 65536, 4, 1024,
+                com.kafkalab.config.LabProperties.DeliveryMode.AT_LEAST_ONCE,
+                com.kafkalab.config.LabProperties.Workload.LIGHT, inputTopic, outputTopic, dltTopic);
+        var environment = new org.springframework.mock.env.MockEnvironment()
+                .withProperty("spring.kafka.bootstrap-servers", KAFKA.getBootstrapServers());
+        com.kafkalab.validation.ValidationRunner runner = new com.kafkalab.validation.ValidationRunner(
+                environment, labProperties, mapper, checksums);
+
+        try {
+            runner.run(new org.springframework.boot.DefaultApplicationArguments(
+                    "--validate", "--run-id=" + runId, "--messages=3", "--timeout-seconds=10"));
+            fail("validator must fail for deliberately injected anomalies");
+        } catch (IllegalStateException expectedFailure) {
+            assertTrue(expectedFailure.getMessage().contains("Independent validation failed"));
+        }
+
+        Map<String, Object> report = mapper.readValue(runFolder.resolve("validation.json").toFile(),
+                new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        assertEquals("FAIL", report.get("status"));
+        assertEquals(Boolean.TRUE, report.get("processingComplete"));
+        assertEquals(1L, ((Number) report.get("valid")).longValue());
+        assertEquals(2L, ((Number) report.get("missing")).longValue());
+        assertEquals(1L, ((Number) report.get("duplicate")).longValue());
+        assertEquals(1L, ((Number) report.get("unexpected")).longValue());
+        assertEquals(1L, ((Number) report.get("invalid")).longValue());
+        assertEquals(1L, ((Number) report.get("dlt")).longValue());
+
+        try (var paths = java.nio.file.Files.walk(runFolder)) {
+            for (Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                java.nio.file.Files.deleteIfExists(path);
+            }
+        }
+    }
+
+    private static Properties producerProperties(String bootstrapServers) {
+        Properties properties = new Properties();
+        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        properties.put(ProducerConfig.ACKS_CONFIG, "all");
+        return properties;
+    }
+
+    private static Properties consumerProperties(String bootstrapServers, String groupId) {
+        Properties properties = new Properties();
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        return properties;
+    }
+
 }
