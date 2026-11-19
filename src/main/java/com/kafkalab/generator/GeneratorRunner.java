@@ -1,6 +1,7 @@
 package com.kafkalab.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kafkalab.config.LabProperties;
 import com.kafkalab.exception.GenerationFailedException;
 import com.kafkalab.model.InputMessage;
@@ -126,7 +127,7 @@ public class GeneratorRunner implements ApplicationRunner {
     private String serialize(InputMessage message) {
         try {
             return mapper.writeValueAsString(message);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             throw new GenerationFailedException("Could not serialize generated message", e);
         }
     }
