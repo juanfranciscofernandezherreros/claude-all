@@ -1,0 +1,56 @@
+name: Kafka delivery comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      messages:
+        description: Messages per run and delivery mode
+        required: true
+        default: "1000000"
+        type: string
+      concurrency:
+        description: Consumer concurrency
+        required: true
+        default: "10"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "5"
+          - "10"
+          - "20"
+      repetitions:
+        description: Repetitions per delivery mode
+        required: true
+        default: "3"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Run one-million-message delivery comparison
+        run: |
+          bash scripts/run-delivery-comparison.sh "${{ inputs.messages }}" "${{ inputs.concurrency }}" "${{ inputs.repetitions }}"
+      - name: Upload comparison and integrity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kafka-delivery-comparison
+          if-no-files-found: warn
+          path: |
+            benchmark-results/delivery-1m-*-comparison.md
+            benchmark-results/delivery-1m-*-comparison.json
+            benchmark-results/delivery-1m-*/summary.json
+            benchmark-results/delivery-1m-*/validation.json
+            benchmark-results/delivery-1m-*/environment.json
+            benchmark-results/delivery-1m-*/report.md
+      - name: Stop Kafka stack
+        if: always()
+        run: docker compose down -v
