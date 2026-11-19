@@ -16,13 +16,18 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.KafkaException;
@@ -45,85 +50,131 @@ public class InputMessageListener {
     public InputMessageListener(ObjectMapper mapper, LabProperties properties, InputMessageProcessor processor,
                                 OutputPublisher publisher, KafkaTemplate<String, String> kafkaTemplate,
                                 LabMetrics metrics, MeterRegistry meterRegistry) {
-        this.mapper = mapper; this.properties = properties; this.processor = processor;
+        this.mapper = mapper;
+        this.properties = properties;
+        this.processor = processor;
         this.publisher = publisher;
-        this.kafkaTemplate = kafkaTemplate; this.metrics = metrics; this.meterRegistry = meterRegistry;
+        this.kafkaTemplate = kafkaTemplate;
+        this.metrics = metrics;
+        this.meterRegistry = meterRegistry;
     }
 
     @KafkaListener(topics = "${lab.input-topic}", groupId = "kafka-lab")
-    public void onMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment, Consumer<?, ?> consumer) {
-        String raw = record.value();
-        metrics.inputReceived();
-        Timer.Sample processingSample = metrics.startProcessing(meterRegistry);
-        final InputMessage input;
-        try {
-            input = mapper.readValue(raw, InputMessage.class);
-        } catch (JsonProcessingException e) {
-            publishDlt(raw, e, record, consumer, acknowledgment);
-            metrics.failed();
-            metrics.stopProcessing(processingSample);
-            return;
-        }
-        final OutputMessage output;
-        try {
-            output = processor.process(input);
-        } catch (InvalidInputMessageException e) {
-            publishDlt(raw, e, record, consumer, acknowledgment);
-            metrics.failed();
-            metrics.stopProcessing(processingSample);
-            return;
-        }
-        try {
-            publishAndCommit(properties.outputTopic(), input.messageId(), mapper.writeValueAsString(output),
-                    record, consumer, acknowledgment);
-        } catch (JsonProcessingException e) {
-            throw new MessageSerializationException("Could not serialize output message " + input.messageId(), e);
-        }
-        metrics.outputPublished();
-        metrics.recordEndToEnd(Duration.between(input.createdAt(), output.processedAt()));
-        metrics.stopProcessing(processingSample);
-    }
+    public void onMessages(List<ConsumerRecord<String, String>> records,
+                           Acknowledgment acknowledgment, Consumer<?, ?> consumer) {
+        List<ProducerRecord<String, String>> publications = new ArrayList<>(records.size());
+        List<ProcessedOutput> processedOutputs = new ArrayList<>(records.size());
+        List<Timer.Sample> processingSamples = new ArrayList<>(records.size());
+        Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
+        int deadLetterRecords = 0;
 
-    private void publishDlt(String raw, Exception error, ConsumerRecord<String, String> record,
-                            Consumer<?, ?> consumer, Acknowledgment acknowledgment) {
-        try {
-            DltMessage dlt = new DltMessage(raw, error.getClass().getSimpleName(),
-                    String.valueOf(error.getMessage()), Instant.now());
-            publishAndCommit(properties.dltTopic(), "invalid-" + Integer.toHexString(raw.hashCode()),
-                    mapper.writeValueAsString(dlt), record, consumer, acknowledgment);
-            metrics.deadLetter();
-        } catch (JsonProcessingException e) {
-            throw new MessageSerializationException("Could not serialize dead-letter message", e);
-        }
-    }
+        for (ConsumerRecord<String, String> record : records) {
+            metrics.inputReceived();
+            Timer.Sample processingSample = metrics.startProcessing(meterRegistry);
+            processingSamples.add(processingSample);
+            offsets.merge(new TopicPartition(record.topic(), record.partition()),
+                    new OffsetAndMetadata(record.offset() + 1),
+                    (current, next) -> current.offset() >= next.offset() ? current : next);
 
-    private void publishAndCommit(String topic, String key, String value, ConsumerRecord<String, String> record,
-                                  Consumer<?, ?> consumer, Acknowledgment acknowledgment) {
-        boolean isExactlyOnceDeliveryEnabled = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
-        if (isExactlyOnceDeliveryEnabled) {
+            String raw = record.value();
+            final InputMessage input;
             try {
-                kafkaTemplate.executeInTransaction(operations -> {
-                    try {
-                        operations.send(topic, key, value).get(30, TimeUnit.SECONDS);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new KafkaPublishException("Interrupted during transactional Kafka publish for topic " + topic, e);
-                    } catch (ExecutionException | TimeoutException e) {
-                        throw new KafkaPublishException("Transactional Kafka publish failed for topic " + topic, e);
-                    }
-                    operations.sendOffsetsToTransaction(
-                            Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
-                            consumer.groupMetadata());
-                    return true;
-                });
-            } catch (KafkaPublishException publishFailure) {
-                throw publishFailure;
-            } catch (KafkaException kafkaFailure) {
-                throw new KafkaPublishException("Transactional Kafka operation failed for topic " + topic, kafkaFailure);
+                input = mapper.readValue(raw, InputMessage.class);
+            } catch (JsonProcessingException invalidJson) {
+                publications.add(deadLetterRecord(raw, invalidJson));
+                metrics.failed();
+                deadLetterRecords++;
+                continue;
             }
-        } else {
-            publisher.publish(topic, key, value);
-            acknowledgment.acknowledge();
+
+            final OutputMessage output;
+            try {
+                output = processor.process(input);
+            } catch (InvalidInputMessageException invalidInput) {
+                publications.add(deadLetterRecord(raw, invalidInput));
+                metrics.failed();
+                deadLetterRecords++;
+                continue;
+            }
+
+            try {
+                String json = mapper.writeValueAsString(output);
+                publications.add(new ProducerRecord<>(properties.outputTopic(), input.messageId(), json));
+                processedOutputs.add(new ProcessedOutput(input, output));
+            } catch (JsonProcessingException serializationFailure) {
+                throw new MessageSerializationException(
+                        "Could not serialize output message " + input.messageId(), serializationFailure);
+            }
+        }
+
+        try {
+            if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
+                publishTransactionally(publications, offsets, consumer);
+            } else {
+                publisher.publishBatch(publications);
+                acknowledgment.acknowledge();
+            }
+        } catch (RuntimeException publishFailure) {
+            processingSamples.forEach(metrics::stopProcessing);
+            throw publishFailure;
+        }
+
+        for (ProcessedOutput processed : processedOutputs) {
+            metrics.outputPublished();
+            metrics.recordEndToEnd(Duration.between(
+                    processed.input().createdAt(), processed.output().processedAt()));
+        }
+        for (int i = 0; i < deadLetterRecords; i++) {
+            metrics.deadLetter();
+        }
+        processingSamples.forEach(metrics::stopProcessing);
+    }
+
+    private ProducerRecord<String, String> deadLetterRecord(String raw, Exception error) {
+        DltMessage dlt = new DltMessage(raw, error.getClass().getSimpleName(),
+                String.valueOf(error.getMessage()), Instant.now());
+        try {
+            return new ProducerRecord<>(properties.dltTopic(),
+                    "invalid-" + Integer.toHexString(raw.hashCode()), mapper.writeValueAsString(dlt));
+        } catch (JsonProcessingException serializationFailure) {
+            throw new MessageSerializationException("Could not serialize dead-letter message", serializationFailure);
         }
     }
+
+    private void publishTransactionally(List<ProducerRecord<String, String>> publications,
+                                        Map<TopicPartition, OffsetAndMetadata> offsets,
+                                        Consumer<?, ?> consumer) {
+        Timer.Sample publishingSample = metrics.startPublishing(meterRegistry);
+        try {
+            kafkaTemplate.executeInTransaction(operations -> {
+                List<CompletableFuture<?>> acknowledgements = new ArrayList<>(publications.size());
+                for (ProducerRecord<String, String> publication : publications) {
+                    acknowledgements.add(operations.send(publication));
+                }
+                awaitAcknowledgements(acknowledgements);
+                operations.sendOffsetsToTransaction(offsets, consumer.groupMetadata());
+                return true;
+            });
+        } catch (KafkaPublishException publishFailure) {
+            throw publishFailure;
+        } catch (KafkaException kafkaFailure) {
+            throw new KafkaPublishException("Transactional Kafka batch publication failed", kafkaFailure);
+        } finally {
+            metrics.stopPublishing(publishingSample);
+        }
+    }
+
+    private void awaitAcknowledgements(List<CompletableFuture<?>> acknowledgements) {
+        try {
+            CompletableFuture.allOf(acknowledgements.toArray(CompletableFuture[]::new))
+                    .get(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new KafkaPublishException("Interrupted while waiting for transactional batch acknowledgements", e);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new KafkaPublishException("Transactional Kafka batch was not fully acknowledged", e);
+        }
+    }
+
+    private record ProcessedOutput(InputMessage input, OutputMessage output) {}
 }
