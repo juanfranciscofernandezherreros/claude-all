@@ -1,6 +1,8 @@
 package com.kafkalab.generator;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.kafkalab.exception.InvalidMessageIdException;
 import org.junit.jupiter.api.Test;
 
 class MessageIdFactoryTest {
@@ -12,7 +14,7 @@ class MessageIdFactoryTest {
     }
     @Test void rejectsInvalidInput() {
         MessageIdFactory factory = new MessageIdFactory();
-        assertThrows(IllegalArgumentException.class, () -> factory.create("", 1));
-        assertThrows(IllegalArgumentException.class, () -> factory.create("run", 0));
+        assertThrows(InvalidMessageIdException.class, () -> factory.create("", 1));
+        assertThrows(InvalidMessageIdException.class, () -> factory.create("run", 0));
     }
 }
