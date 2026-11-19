@@ -41,6 +41,19 @@ jobs:
                      for key in ("payload", "workload", "delivery") for x in matrix[key])
           print("Benchmark matrix matches PRD: 5 payload, 3 workload, 2 delivery scenarios.")
           PY
+      - name: Validate stress runner defaults
+        run: |
+          bash scripts/run-stress.sh --dry-run > /tmp/stress-matrix.json
+          python3 - <<'PY'
+          import json
+          stress = json.load(open("/tmp/stress-matrix.json", encoding="utf-8"))
+          assert stress == {
+              "messages": 5_000_000, "concurrency": 20, "payloadBytes": 102400,
+              "workload": "HEAVY", "deliveryMode": "EXACTLY_ONCE",
+              "warmupMessages": 10_000, "repetitions": 3
+          }
+          print("Stress runner defaults validated.")
+          PY
       - name: Validate Docker Compose
         run: docker compose config --quiet
       - name: Inspect Docker runtime
