@@ -6,8 +6,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class MessageIdFactory {
     public String newRunId() { return UUID.randomUUID().toString(); }
+
     public String create(String runId, long sequence) {
-        if (runId == null || runId.isBlank() || sequence < 1) throw new IllegalArgumentException("runId and positive sequence are required");
+        boolean hasInvalidRunId = runId == null || runId.isBlank();
+        boolean hasNonPositiveSequence = sequence < 1;
+        if (hasInvalidRunId || hasNonPositiveSequence) {
+            throw new IllegalArgumentException("runId and positive sequence are required");
+        }
         return runId + "-" + sequence;
     }
 }
