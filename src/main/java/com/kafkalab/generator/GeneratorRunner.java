@@ -41,7 +41,10 @@ public class GeneratorRunner implements ApplicationRunner {
             for (int worker = 0; worker < properties.generatorThreads(); worker++) {
                 final int workerId = worker;
                 workers.add(pool.submit(() -> {
-                    for (long sequence = workerId + 1L; sequence <= count; sequence += properties.generatorThreads()) {
+                    long blockStride = (long) properties.generatorThreads() * properties.batchSize();
+                    for (long blockStart = (long) workerId * properties.batchSize() + 1; blockStart <= count; blockStart += blockStride) {
+                      long blockEnd = Math.min(count, blockStart + properties.batchSize() - 1);
+                      for (long sequence = blockStart; sequence <= blockEnd; sequence++) {
                         try {
                             InputMessage message = new InputMessage(1, ids.create(runId, sequence), Instant.now(),
                                     "BENCHMARK", new InputMessage.Payload(sequence, payload));
@@ -60,6 +63,7 @@ public class GeneratorRunner implements ApplicationRunner {
                         } catch (Exception e) {
                             throw new CompletionException(e);
                         }
+                      }
                     }
                 }));
             }
