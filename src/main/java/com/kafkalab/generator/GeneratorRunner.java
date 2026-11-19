@@ -76,7 +76,7 @@ public class GeneratorRunner implements ApplicationRunner {
                                 List<Future<?>> transactionAcks = new ArrayList<>(records.size());
                                 for (int i = 0; i < records.size(); i++) {
                                     long sequence = currentBlockStart + i;
-                                    transactionAcks.add(operations.send(properties.inputTopic(), ids.create(runId, sequence), records.get(i)));
+                                    transactionAcks.add(operations.send(properties.inputTopic(), ids.create(generationRunId, sequence), records.get(i)));
                                 }
                                 awaitAcknowledgements(transactionAcks, deadlineNanos);
                                 return true;
@@ -84,7 +84,7 @@ public class GeneratorRunner implements ApplicationRunner {
                         } else {
                             for (int i = 0; i < records.size(); i++) {
                                 long sequence = blockStart + i;
-                                acknowledgements.add(kafka.send(properties.inputTopic(), ids.create(runId, sequence), records.get(i)));
+                                acknowledgements.add(kafka.send(properties.inputTopic(), ids.create(generationRunId, sequence), records.get(i)));
                             }
                             awaitAcknowledgements(acknowledgements, deadlineNanos);
                         }
