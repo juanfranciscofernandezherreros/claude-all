@@ -73,7 +73,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: agrupar propiedades kafka/app/benchmark/metrics; mapear cada variable PRD (incluidos BATCH_SIZE y PRODUCER_BATCH_BYTES); validar enum/rango/positividad; no registrar secretos; documentar defaults.
   - Artefactos: application.yml, clases @ConfigurationProperties y tests.
   - Prueba: contexto arranca con defaults; valores inválidos impiden arrancar con mensaje accionable.
-- [x] B01.4 **DONE — tabla de variables ampliada con defaults, rangos y efectos; pendiente comprobar interpolación Compose y arranque real.** Evidencia: README commit `c0666d0`; prueba de entorno pendiente.
+- [x] B01.4 **DONE.** README documenta todas las variables Compose/Spring con defaults, rangos, unidades y efectos (`c0666d0` y actualización posterior); `.env.example` contiene valores alineados. CI `44537286874` ejecutó `docker compose config --quiet` correctamente; el stack real arrancó con health UP (`44537310704`).
   - Pasos: listar variable, default, rango, unidad y efecto; mantener Compose y Spring con nombres idénticos; no incluir credenciales reales.
   - Artefactos: .env.example y tabla de variables en README.
   - Prueba: Compose interpola el ejemplo y app arranca con configuración por defecto.
