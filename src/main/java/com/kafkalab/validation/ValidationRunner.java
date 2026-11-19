@@ -11,6 +11,8 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.PartitionInfo;
@@ -58,7 +60,13 @@ public class ValidationRunner implements ApplicationRunner {
                 }
             }
             consumer.assign(partitions);
-            Map<TopicPartition, Long> ends = consumer.endOffsets(partitions, Duration.ofSeconds(20));
+            Map<TopicPartition, Long> initialEnds = consumer.endOffsets(partitions, Duration.ofSeconds(20));
+            Map<TopicPartition, Long> inputEnds = new HashMap<>();
+            for (TopicPartition partition : partitions) {
+                if (partition.topic().equals(properties.inputTopic())) {
+                    inputEnds.put(partition, initialEnds.get(partition));
+                }
+            }
             Path snapshotFile = Path.of("benchmark-results", runId, "offsets.json");
             if (Files.exists(snapshotFile)) {
                 List<Map<String, Object>> snapshot = mapper.readValue(snapshotFile.toFile(), new TypeReference<>() {});
@@ -72,8 +80,14 @@ public class ValidationRunner implements ApplicationRunner {
                 consumer.seekToBeginning(partitions);
             }
             long deadline = System.nanoTime() + Duration.ofSeconds(timeoutSeconds).toNanos();
-            while (!atEnd(consumer, ends) && System.nanoTime() < deadline) {
-                for (ConsumerRecord<String, String> record : consumer.poll(Duration.ofMillis(500))) {
+            boolean processingComplete = false;
+            Map<TopicPartition, Long> finalEnds = null;
+            Properties adminConfig = new Properties();
+            adminConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG,
+                    environment.getProperty("spring.kafka.bootstrap-servers", "localhost:9094"));
+            try (AdminClient admin = AdminClient.create(adminConfig)) {
+                while (System.nanoTime() < deadline) {
+                    for (ConsumerRecord<String, String> record : consumer.poll(Duration.ofMillis(500))) {
                     if (record.topic().equals(properties.inputTopic())) {
                         try {
                             InputMessage input = mapper.readValue(record.value(), InputMessage.class);
@@ -110,7 +124,18 @@ public class ValidationRunner implements ApplicationRunner {
                             if (record.value().contains(runId + "-")) dlt++;
                         }
                     }
+                    }
+                    if (finalEnds == null && groupCommittedThrough(admin, inputEnds)) {
+                        finalEnds = consumer.endOffsets(partitions, Duration.ofSeconds(20));
+                    }
+                    if (finalEnds != null && atEnd(consumer, finalEnds)) {
+                        processingComplete = true;
+                        break;
+                    }
                 }
+            }
+            if (finalEnds == null) {
+                finalEnds = consumer.endOffsets(partitions, Duration.ofSeconds(20));
             }
         }
         for (int sequence = sequences.nextSetBit(1); sequence >= 0; sequence = sequences.nextSetBit(sequence + 1)) {
@@ -120,6 +145,7 @@ public class ValidationRunner implements ApplicationRunner {
         long missing = Math.max(0, expected - valid);
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("runId", runId); report.put("timestamp", Instant.now().toString());
+        report.put("processingComplete", processingComplete);
         report.put("expected", expected); report.put("valid", valid); report.put("failed", dlt);
         report.put("dlt", dlt); report.put("missing", missing); report.put("duplicate", duplicates);
         report.put("unexpected", unexpected); report.put("invalid", invalid);
@@ -135,12 +161,22 @@ public class ValidationRunner implements ApplicationRunner {
             latency.put("maxNanos", latencyNanos.get(latencyNanos.size() - 1));
         }
         report.put("latency", latency);
-        report.put("status", missing == 0 && duplicates == 0 && unexpected == 0 && invalid == 0 && dlt == 0 ? "PASS" : "FAIL");
+        report.put("status", processingComplete && missing == 0 && duplicates == 0 && unexpected == 0 && invalid == 0 && dlt == 0 ? "PASS" : "FAIL");
         Path output = Path.of("benchmark-results", runId, "validation.json");
         Files.createDirectories(output.getParent());
         mapper.writerWithDefaultPrettyPrinter().writeValue(output.toFile(), report);
         System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report));
         if (!"PASS".equals(report.get("status"))) throw new IllegalStateException("Independent validation failed; see " + output);
+    }
+
+    private boolean groupCommittedThrough(AdminClient admin, Map<TopicPartition, Long> required) throws Exception {
+        Map<TopicPartition, OffsetAndMetadata> committed = admin.listConsumerGroupOffsets("kafka-lab")
+                .partitionsToOffsetAndMetadata().get(5, java.util.concurrent.TimeUnit.SECONDS);
+        for (var entry : required.entrySet()) {
+            long offset = committed.getOrDefault(entry.getKey(), new OffsetAndMetadata(0)).offset();
+            if (offset < entry.getValue()) return false;
+        }
+        return true;
     }
 
     private boolean atEnd(KafkaConsumer<String, String> consumer, Map<TopicPartition, Long> ends) {
