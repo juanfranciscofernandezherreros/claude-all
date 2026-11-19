@@ -43,6 +43,16 @@ Esta regla es prioritaria y no se puede omitir:
 - Aplicar la misma convención a `while`, operadores ternarios y expresiones booleanas relevantes cuando mejore su comprensión.
 - Los nombres deben describir qué significa la condición, no repetir literalmente su implementación (evitar nombres como `check1`, `condition` o `isTrue`).
 
+## Regla obligatoria: excepciones propias y semántica de errores
+- Representar los errores de negocio, dominio y aplicación mediante excepciones propias cuyo nombre describa el problema y cuyo tipo permita al llamador decidir cómo tratarlo.
+- No usar `RuntimeException`, `IllegalStateException` o `IllegalArgumentException` como tipos de error de aplicación o dominio. Se permiten excepciones estándar para precondiciones técnicas locales y APIs de bajo nivel cuando no se esté expresando un error del dominio.
+- Diferenciar errores de validación de entrada, errores de procesamiento, errores de infraestructura/publicación y errores de configuración; no clasificar fallos técnicos como mensajes inválidos ni enviarlos a DLT por defecto.
+- Mantener la causa original al traducir excepciones técnicas y conservar contexto útil sin exponer secretos ni datos sensibles.
+- Elegir checked o unchecked según el contrato y el tratamiento esperado; evitar capturar `Exception` de forma genérica salvo en fronteras donde sea necesario para rollback/recuperación, y volver a lanzar un tipo semánticamente adecuado.
+- Mantener explícitamente las políticas de retry, DLT, ACK, offsets y transacciones Kafka: un nuevo tipo de excepción no debe alterar qué errores son reintentables, recuperables o terminales.
+- Reutilizar excepciones coherentes cuando representen el mismo concepto; no crear una clase por cada mensaje ni envolver excepciones sin aportar semántica.
+- Añadir pruebas que verifiquen el tipo de excepción, su causa y el tratamiento esperado en el adaptador correspondiente.
+
 ## Regla obligatoria: anotaciones Lombok y Spring
 Aplicar estas convenciones al código Java nuevo y al que se modifique:
 - Usar Lombok para boilerplate cuando reduzca código sin ocultar lógica: `@RequiredArgsConstructor` para constructor injection y `@Slf4j` para logging.
