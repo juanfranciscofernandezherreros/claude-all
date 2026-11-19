@@ -25,14 +25,14 @@ mkdir -p "$results/$warmup"
 echo "Warm-up: $name"
 docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
   --spring.main.web-application-type=none --lab.consumer.enabled=false --generate \
-  --messages=10000 --run-id="$warmup" > "$results/$warmup/execution.log" 2>&1
+  --messages=10000 --run-id="$warmup" --timeout-seconds="${GENERATOR_TIMEOUT_SECONDS:-600}" > "$results/$warmup/execution.log" 2>&1
 for repetition in 1 2 3; do
   run_id="${name}-r${repetition}-$(date -u +%Y%m%dT%H%M%S)-$$"
   mkdir -p "$results/$run_id"
   echo "Run $run_id"
   docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
     --spring.main.web-application-type=none --lab.consumer.enabled=false --generate \
-    --messages="$messages" --run-id="$run_id" | tee "$results/$run_id/execution.log"
+    --messages="$messages" --run-id="$run_id" --timeout-seconds="${GENERATOR_TIMEOUT_SECONDS:-600}" | tee "$results/$run_id/execution.log"
   docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
     --spring.main.web-application-type=none --lab.consumer.enabled=false --validate \
     --run-id="$run_id" --messages="$messages" --timeout-seconds=1800 \
