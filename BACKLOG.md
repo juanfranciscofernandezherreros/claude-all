@@ -217,7 +217,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: incluir expected/valid/failed/DLT/missing/duplicate/unexpected/invalid; incluir runId y timestamp; definir exit 0 solo si criterios PRD pasan.
   - Artefactos: validation.json y CLI validate.
   - Prueba: caso íntegro exit 0; cada anomalía exit no cero.
-- [x] B08.4 **DONE — verificada en CI; mejora de readiness pendiente de CI adicional.** CI `44533189080`: 26 tests, 0 fallos/errores/omitidos; fixture Testcontainers reportó `processingComplete=true`, `valid=1`, `missing=2`, `duplicate=1`, `unexpected=1`, `invalid=1`, `dlt=1`, `status=FAIL` como se esperaba. Se añadieron espera de líderes y ACKs acotados a 10s para endurecer el fixture (`be500325`); esa mejora tiene CI adicional en curso.
+- [x] B08.4 **DONE.** CI `44533189080` ejecutó 26 tests (0 fallos/errores/omitidos); fixture Testcontainers reportó `processingComplete=true`, `valid=1`, `missing=2`, `duplicate=1`, `unexpected=1`, `invalid=1`, `dlt=1`, `status=FAIL` como se esperaba. CI `44533565949` también superó el test con espera de líderes en los tres topics y ACKs acotados a 10s (`be500325`).
   - Pasos: construir fixtures pequeños controlados; ejecutar validador; comprobar conteos y clasificación exacta.
   - Artefactos: tests unitarios/integración del validador.
   - Prueba: assertions exactas de cada contador.
