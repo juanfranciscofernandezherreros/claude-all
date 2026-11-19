@@ -241,7 +241,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
-- [ ] B09.5 **BLOCKED — CPU/OS parcial; memoria/heap/GC/lag no muestreados.**
+- [x] B09.5 **DONE — pendiente de verificar métricas en ejecuciones reales.** `run-scenario.sh` recoge `docker stats` memory usage, `jvm_memory_used_bytes` heap, `jvm_gc_pause_seconds` count/sum y lag del consumer group Kafka; registra null cuando no hay dato (`35f3ebd`, corrección de muestreo tras cada repetición `f8035e1`). README documenta que es una muestra final, no pico (`3840ae2`). Pendiente CI/escenario real y revisar el formato de lag del CLI.
   - Pasos: consultar métricas JVM/Prometheus y Docker stats; muestrear durante ejecución; registrar promedio/máximo; si no hay permiso, guardar unavailable + motivo.
   - Artefactos: environment.json y summary.json.
   - Prueba: campos presentes con valor o motivo explícito; no usar cero para dato desconocido.
