@@ -2,10 +2,26 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-messages="\${1:-1000000}"
-concurrency="\${2:-\${BENCHMARK_CONCURRENCY:-10}}"
-repetitions="\${3:-\${SCENARIO_REPETITIONS:-3}}"
-warmup_messages="\${WARMUP_MESSAGES:-10000}"
+if [[ "${1:-}" == "--dry-run" ]]; then
+  python3 - "${2:-1000000}" "${3:-${BENCHMARK_CONCURRENCY:-10}}" "${4:-${SCENARIO_REPETITIONS:-3}}" <<'PY'
+import json, sys
+messages, concurrency, repetitions = map(int, sys.argv[1:])
+assert messages > 0 and repetitions > 0
+assert concurrency in (1, 2, 5, 10, 20)
+print(json.dumps({"messagesPerRun": messages, "concurrency": concurrency,
+                  "repetitionsPerMode": repetitions,
+                  "deliveryModes": ["AT_LEAST_ONCE", "EXACTLY_ONCE"],
+                  "payloadBytes": 1024, "workload": "LIGHT",
+                  "batchSize": 1000, "producerBatchBytes": 131072,
+                  "compression": "lz4", "warmupMessages": 10000}, indent=2))
+PY
+  exit 0
+fi
+
+messages="${1:-1000000}"
+concurrency="${2:-${BENCHMARK_CONCURRENCY:-10}}"
+repetitions="${3:-${SCENARIO_REPETITIONS:-3}}"
+warmup_messages="${WARMUP_MESSAGES:-10000}"
 
 for value in "$messages" "$concurrency" "$repetitions" "$warmup_messages"; do
   if [[ ! "$value" =~ ^[1-9][0-9]*$ ]]; then
@@ -20,13 +36,13 @@ esac
 
 # Fixed workload and producer tuning for a reproducible apples-to-apples comparison.
 export CONCURRENCY="$concurrency"
-export BATCH_SIZE="\${BATCH_SIZE:-1000}"
-export PRODUCER_BATCH_BYTES="\${PRODUCER_BATCH_BYTES:-131072}"
-export GENERATOR_THREADS="\${GENERATOR_THREADS:-4}"
+export BATCH_SIZE="${BATCH_SIZE:-1000}"
+export PRODUCER_BATCH_BYTES="${PRODUCER_BATCH_BYTES:-131072}"
+export GENERATOR_THREADS="${GENERATOR_THREADS:-4}"
 export PAYLOAD_BYTES=1024
 export WORKLOAD=LIGHT
-export COMPRESSION_TYPE="\${COMPRESSION_TYPE:-lz4}"
-export LINGER_MS="\${LINGER_MS:-5}"
+export COMPRESSION_TYPE="${COMPRESSION_TYPE:-lz4}"
+export LINGER_MS="${LINGER_MS:-5}"
 export WARMUP_MESSAGES="$warmup_messages"
 export SCENARIO_REPETITIONS=1
 
