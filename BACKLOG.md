@@ -237,7 +237,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
   - Prueba: dry-run imprime escenarios exactos; tests confirman número/valores de casos.
-- [x] B09.4 **DONE — reportes por run implementados; el CSV inicializa su cabecera incluso al ejecutar un escenario aislado. Pendiente verificar los seis artefactos, escritura atómica y CSV con ejecuciones reales.** Evidencia: fix de cabecera commit `6823ca6`; pruebas runtime pendientes.
+- [x] B09.4 **DONE — pendiente de verificación de artefactos.** Reportes por run y cabecera CSV de escenario aislado; scripts Linux crean `benchmark-results` y preparan permisos de escritura (`8be44ae`, `f6af4fe`, `6c7aa0b`). CI detectó `AccessDeniedException` con el usuario no-root 10001 en bind mount; nueva CI prepara el directorio antes de Compose (`c47c93f`). Pendiente smoke PASS y comprobar los seis artefactos.
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
@@ -257,7 +257,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B10 — Experiencia Windows/Linux, documentación y cierre
 **Depende:** B02, B09.
-- [x] B10.1 **DONE — launchers Windows/shell creados; pendiente prueba en ambos sistemas.**
+- [x] B10.1 **DONE — pendiente de prueba Windows.** Pares `.bat`/`.sh` creados; launchers Windows ahora preparan permisos de escritura del directorio `benchmark-results` mediante ACL antes de arrancar Compose (`8f2a476`, `05df37f`, `6f2e8a3`, `bb40713`). Pendiente ejecutar en Windows real.
   - Pasos: crear pares .bat/.sh; validar argumentos; cambiar al directorio raíz; propagar exit codes; imprimir ayuda breve; scripts idempotentes.
   - Artefactos: scripts/ y launchers raíz.
   - Prueba: invocar ayuda, start/stop y benchmark smoke desde Windows y shell cuando disponibles.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente de smoke Compose.** CI `984f8ed` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests pasaron y 0 omitidos; Testcontainers Kafka 3.9.1 pasó. `docker compose config --quiet` pasó. Workflow actualizado en `e00d692` para construir/arrancar Kafka+app, comprobar health y ejecutar generate+validate de 100 mensajes; la primera ejecución no llegó a estos pasos porque falló la compilación de test en B06.3, corregida en `81994a9`. Pendiente CI completa, smoke Compose y benchmark 1M.
+- [x] B10.4 **DONE — pendiente de smoke funcional.** CI `81994a9`: build y `./mvnw -B clean verify` pasaron, Testcontainers 1.21.4 + Kafka 3.9.1 y test EOS ampliado pasaron. Compose construyó Kafka+app y `/actuator/health` respondió. El smoke generate/validate falló al escribir `benchmark-results` por permisos del bind mount para UID 10001 (`AccessDeniedException`). Corregido con preparación `chmod 777` en CI/Linux y ACL Windows (`c47c93f`, `8be44ae`, `f6af4fe`, `6c7aa0b`, `8f2a476`, `05df37f`, `6f2e8a3`, `bb40713`). Pendiente nueva CI con smoke PASS y benchmark 1M.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
