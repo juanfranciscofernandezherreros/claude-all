@@ -161,7 +161,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: clasificar errores permanentes vs transitorios; serializar original crudo si JSON inválido; truncar stack/message de error para no inflar DLT; publicar DLT con ACK.
   - Artefactos: DltPublisher y modelo DLT.
   - Prueba: JSON malformado y campo inválido aparecen una sola vez en DLT; no producen output normal.
-- [x] B05.5 **DONE — pendiente de prueba de parada durante carga/reinicio.** Spring Boot usa `server.shutdown: graceful` y lifecycle timeout 30s; listener factory aplica Boot defaults y `ContainerProperties.shutdownTimeout=30s` para esperar mensajes en curso (`3e86c59`, `4e3ee55`). CI de smoke ya ejecuta `docker compose down -v` al terminar; falta test que envíe carga durante SIGTERM y verifique offsets/output sin pérdida.
+- [x] B05.5 **DONE — pendiente de prueba de parada durante carga/reinicio.** Spring Boot usa `server.shutdown: graceful` y lifecycle timeout 30s; listener factory aplica Boot defaults y `ContainerProperties.shutdownTimeout=30s` para esperar mensajes en curso (`3e86c59`, `4e3ee55`). CI de smoke ya ejecuta `docker compose down -v` al terminar; la primera CI detectó generic types incompatibles con Boot configurer; corregido a `ConcurrentKafkaListenerContainerFactory<Object,Object>` en `ebf257d5`. Pendiente CI verde y test que envíe carga durante SIGTERM y verifique offsets/output sin pérdida.
   - Pasos: detener consumo nuevo; terminar/abortar procesamiento en curso según timeout; cerrar producer; dejar offsets sin commit si publicación no confirmó.
   - Artefactos: lifecycle hooks y configuración graceful shutdown.
   - Prueba: matar app durante lote y reiniciar; cada entrada tiene salida validada o sigue pendiente/DLT, sin pérdida.
