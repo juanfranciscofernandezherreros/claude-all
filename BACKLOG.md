@@ -209,7 +209,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: leer desde beginning para runId; determinar límites/end offsets; recorrer particiones hasta capturar todos los registros del run; excluir transacciones abortadas en EOS.
   - Artefactos: ValidationRunner y Kafka reader independiente.
   - Prueba: validador termina cuando alcanza los offsets objetivo y no depende de contadores internos del consumer.
-- [ ] B08.2 **BLOCKED — comparación funcional parcial; memoria no acotada para expected checksums y faltan fixtures de anomalías.**
+- [x] B08.2 **DONE — pendiente de verificación de escala.** Checksums esperados/reales almacenados en archivos temporales de ancho fijo (32 bytes por secuencia), eliminados al cerrar el validador; bitsets registran presencia y un `long[]` primitivo conserva latencias (8 bytes por salida), sin arrays de strings/checksums en heap. Clase y tests `DiskChecksumStore` añadidos (`4e6e8c1`, `2541e16`); integración en `ValidationRunner` (`97f8a70`). Primera CI detectó colisión de nombre `output`, corregida en `8d048b3`; pendiente CI verde y prueba 1M/5M con medición de heap/disco.
   - Pasos: obtener rango esperado 1..N; almacenar IDs vistos en estructura acotada/disco; contar ocurrencias; verificar schema/checksum/sequence; agregar DLT y fallidos.
   - Artefactos: ValidationReport y almacenamiento temporal limpiable.
   - Prueba: dataset sintético detecta missing, duplicate, unexpected, corrupto y DLT por separado.
