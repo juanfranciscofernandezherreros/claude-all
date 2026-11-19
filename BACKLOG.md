@@ -137,7 +137,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: mantener contador de futures pendientes; flush al terminar; timeout definido; agregar excepciones; no declarar publicación completa con callbacks pendientes.
   - Artefactos: resultado de generación y logging estructurado.
   - Prueba: simular broker inaccesible y comprobar exit code no cero; caso correcto confirma N ACK.
-- [x] B04.4 **DONE.** CI `44532639846` superó `clean verify` tras esperar la elección de líderes Kafka en 24 particiones (`e000779b`); cubre N=1 y N=10.000 sin huecos/duplicados con 1/2/5/10/20/64 workers y batch 1/500/1000, cinco tamaños payload, ACK de 10.000 mensajes y consistencia de partición por clave (`2003e63d`, `cb90566a`, `20b733a5`, `9522ec9d`, `e000779b`).
+- [x] B04.4 **DONE.** CI `44535240283` superó `clean verify` tras estabilizar la prueba de particionado con seis particiones y readiness coherente (`1ba53b60`). Tests cubren N=1 y N=10.000 sin huecos/duplicados con 1/2/5/10/20/64 workers y batch 1/500/1000; cinco tamaños de payload; 10.000 ACKs `acks=all`, lectura de los 10.000 y afinidad de clave a partición (`2003e63d`, `cb90566a`, `20b733a5`, `9522ec9d`, `e000779b`, `b375f0b3`, `1ba53b60`).
   - Pasos: testear N=1, N=10k, payloads definidos, threads concurrentes, fallos y particionado por key.
   - Artefactos: tests unitarios e integración.
   - Prueba: ningún ID repetido; particiones reciben claves; payload de longitud solicitada.
