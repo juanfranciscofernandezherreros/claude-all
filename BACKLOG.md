@@ -129,7 +129,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: definir bootstrap según entorno; key=messageId; serializer JSON; acks all; enable.idempotence true; retries compatibles; batch.size=PRODUCER_BATCH_BYTES; linger/compression externos.
   - Artefactos: KafkaProducerConfig y propiedades.
   - Prueba: inspeccionar configuración efectiva y publicar/leer mensaje de prueba.
-- [x] B04.2 **DONE — generador escrito; pendiente prueba 10k y auditoría de batching.**
+- [x] B04.2 **DONE — generador por bloques implementado con envíos asíncronos y espera de ACK por bloque; EXACTLY_ONCE agrupa cada bloque en una transacción. Pendiente prueba 10k y verificación de rendimiento.** Evidencia de implementación: commits `c8f47d4` y `3688502`; no ejecutado por falta de runtime Java/Kafka en esta sesión.
   - Pasos: validar argumentos; crear runId; generar secuencias 1..N sin duplicar; construir payload con bytes exactos; agrupar envío en bloques de BATCH_SIZE registros; distribuir envío entre threads; usar callbacks/acks.
   - Artefactos: generator CLI, payload factory y documentación de flags.
   - Prueba: generar 10.000; contar IDs distintos y comprobar payload bytes y secuencia continua.
