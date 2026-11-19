@@ -1,0 +1,40 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Runtime files
+*.log
+*.tmp
+*.pid
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Local Kafka / Docker data
+data/
+volumes/
+kafka-data/
+.docker-data/
+
+# Benchmark raw artifacts (keep compact summaries and reports)
+benchmark-results/*/execution.log
+benchmark-results/*/offsets.json
+benchmark-results/*/validation-console.json
+benchmark-results/warmup-*/
+benchmark-results/*/raw/
+benchmark-results/*/validation-work/
+benchmark-results/*/resource-samples.*
+benchmark-results/*/prometheus-*.txt
+

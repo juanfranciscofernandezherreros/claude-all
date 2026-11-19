@@ -1,0 +1,1 @@
+Read AGENTS.md first and follow it as the canonical agent guide. Then read PRD.md and BACKLOG.md once. PRD defines requirements; BACKLOG defines ordered tasks, micro-steps, tests and commit granularity. Execute B00–B10 in order. Keep this file as a compatibility entry point for Claude Code.

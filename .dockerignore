@@ -1,0 +1,9 @@
+.git
+.idea
+.vscode
+target
+benchmark-results
+.env
+*.log
+data
+volumes

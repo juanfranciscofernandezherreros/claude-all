@@ -1,0 +1,149 @@
+# Kafka Performance Lab
+
+Laboratorio local para generar, transformar, validar y medir mensajes Kafka con Java 21 y Spring Boot 3.4.5. El broker Kafka 3.9.1 arranca en KRaft mediante Docker Compose; no necesita ZooKeeper ni una instalación local de Kafka.
+
+## Inicio rápido
+
+### Windows
+
+1. Instala Docker Desktop con Docker Compose v2, Git for Windows (incluye Git Bash y curl) y Python 3.
+2. Clona este repositorio.
+3. Ejecuta `RUN-KAFKA-LAB.bat`.
+
+El launcher inicia Docker Desktop si está instalado pero detenido, levanta el stack y ejecuta el benchmark principal de 1.000.000 de mensajes. Para levantar solo los servicios: `scripts\start.bat`.
+
+### Linux
+
+Requisitos: Docker Engine + Compose v2, Git, Bash, curl y Python 3.10 o posterior. Para compilar fuera de Docker, también Java 21.
+
+```bash
+docker compose up -d --build
+bash scripts/run-benchmark.sh 1000000
+```
+
+Parar los servicios sin borrar volúmenes ni resultados:
+
+```bash
+bash scripts/stop.sh
+```
+
+No uses `docker compose down -v` salvo que quieras borrar expresamente los datos persistentes de Kafka, Prometheus y Grafana.
+
+## Comandos
+
+| Acción | Windows | Linux |
+|---|---|---|
+| Arrancar stack | `scripts\start.bat` | `bash scripts/start.sh` |
+| Parar stack | `scripts\stop.bat` | `bash scripts/stop.sh` |
+| Generar mensajes | `scripts\generate.bat 10000 smoke-001 600` | `bash scripts/generate.sh 10000 smoke-001 600` |
+| Validar ejecución | `scripts\validate.bat smoke-001 10000` | `bash scripts/validate.sh smoke-001 10000` |
+| Benchmark principal | `scripts\run-benchmark.bat 1000000` | `bash scripts/run-benchmark.sh 1000000` |
+| Suite completa | `scripts\run-full-suite.bat` | `bash scripts/run-full-suite.sh` |
+
+El benchmark principal ejecuta un warm-up de 10.000 mensajes y tres repeticiones medidas para concurrencias 1, 2, 5, 10 y 20. `run-full-suite` ejecuta el benchmark principal y después 10 escenarios secundarios: cinco tamaños de payload, tres workloads y dos modos de entrega. Los escenarios secundarios usan 100.000 mensajes por repetición por defecto; puedes cambiarlo con `SECONDARY_MESSAGES`. La matriz se valida con `bash scripts/run-full-suite.sh --dry-run`. Para stress intensivo, `run-stress` aumenta la carga en escalones acumulativos de 100.000 mensajes hasta 5M por defecto, con concurrencia 20, payload 100 KiB, workload HEAVY, EXACTLY_ONCE y warm-up 10k. Ejecuta una repetición por escalón por defecto (`STRESS_REPETITIONS` configurable), conserva `benchmark-results/stress-history.jsonl` y se detiene ante errores de validación, memoria del contenedor superior al 85% o lag creciente durante tres escalones consecutivos. Usa `STRESS_STEP_MESSAGES` para cambiar el tamaño del escalón y `bash scripts/run-stress.sh --dry-run` para inspeccionar la configuración.
+
+Para compilar y probar desde el host:
+
+- Windows: `mvnw.cmd clean verify`
+- Linux/macOS: `bash ./mvnw -B clean verify`
+
+Los scripts `mvnw`/`mvnw.cmd` descargan Maven 3.9.9 en el perfil local del usuario; son bootstrap scripts del repositorio, no incluyen el JAR oficial de Maven Wrapper. GitHub Actions ejecuta la misma verificación con Java 21 y valida la configuración de Compose.
+
+## Arquitectura y flujo
+
+- `kafka`: Apache Kafka 3.9.1, KRaft, un broker, 24 particiones, replication factor 1.
+- `app`: Spring Boot, consumer `kafka-lab`, productor de salida, generador y validador independientes.
+- `prometheus`: scrape de Actuator cada 5 segundos.
+- `grafana`: dashboard provisionado automáticamente.
+
+Flujo: generador → `input-topic` → consumer → SHA-256/workload → `output-topic`. Mensajes inválidos o fallos permanentes se contabilizan en `input-dlt-topic`. El consumer espera el ACK del productor antes de confirmar offsets en AT_LEAST_ONCE. En EXACTLY_ONCE, salida y offset se publican en una transacción Kafka y los lectores usan `read_committed`.
+
+El validador es un proceso separado: captura offsets de inicio, espera a que el consumer group confirme el rango de entrada, fija entonces los endOffsets finales de output/DLT y compara secuencias, duplicados, ausencias, extras, esquema y checksum contra los mensajes de entrada. Los checksums esperados y reales se comparan mediante archivos temporales binarios (32 bytes por secuencia), eliminados al terminar la validación. La presencia se controla con bitsets y las latencias con un array primitivo `long` (aprox. 8 bytes por salida); no se mantienen todos los checksums ni mensajes en heap. La medición de memoria a escala 1M/5M sigue pendiente (B08.2).
+
+## Puertos locales
+
+Todos los puertos se enlazan a loopback (127.0.0.1), no a la red externa:
+
+| Servicio | URL |
+|---|---|
+| Kafka externo | `localhost:9094` |
+| API / Actuator | `http://localhost:8080/actuator/health` |
+| Prometheus | `http://localhost:9090` |
+| Grafana | `http://localhost:3000` |
+
+Grafana local: usuario `admin`, contraseña inicial `admin`. Cambia la contraseña si modificas el alcance de red o expones el servicio.
+
+## Configuración
+
+Copia `.env.example` a `.env` y modifica solo lo necesario. Los valores predeterminados cumplen el PRD.
+
+| Variable | Predeterminado | Descripción |
+|---|---:|---|
+| `MESSAGES` | 1000000 | Mensajes por ejecución principal |
+| `PARTITIONS` | 24 | Particiones Kafka (fijo) |
+| `CONCURRENCY` | 1 | 1, 2, 5, 10 o 20 |
+| `BATCH_SIZE` | 500 | Registros por poll y bloque lógico del generador |
+| `PRODUCER_BATCH_BYTES` | 65536 | `batch.size` Kafka en bytes |
+| `GENERATOR_THREADS` | 4 | Hilos del generador |
+| `PAYLOAD_BYTES` | 1024 | 1/5/10/50/100 KiB expresados en bytes |
+| `DELIVERY_MODE` | AT_LEAST_ONCE | AT_LEAST_ONCE o EXACTLY_ONCE |
+| `WORKLOAD` | LIGHT | LIGHT=1, MEDIUM=10, HEAVY=100 rondas SHA-256 |
+| `COMPRESSION_TYPE` | none | Compresión del productor Kafka |
+| `LINGER_MS` | 5 | Espera del productor en milisegundos |
+| `KAFKA_BOOTSTRAP_SERVERS` | localhost:9094 | Bootstrap Kafka visto desde el host; dentro de Compose la app usa el listener interno configurado |
+| `APP_PORT` | 8080 | Puerto HTTP de Spring Boot |
+| `KAFKA_ISOLATION_LEVEL` | read_committed | Aislamiento del consumer Kafka (`read_committed` o `read_uncommitted`) |
+
+El generador tiene un timeout global de 600 segundos por defecto; el tercer argumento de `generate.bat`/`generate.sh` permite cambiarlo (segundos). Los escenarios del benchmark aceptan `GENERATOR_TIMEOUT_SECONDS` como variable de entorno. No se usan sleeps artificiales en el procesamiento. Rangos: `MESSAGES` > 0; `PARTITIONS` = 24; `CONCURRENCY` = 1/2/5/10/20; `BATCH_SIZE` = 1–10000; `PRODUCER_BATCH_BYTES` > 0; `GENERATOR_THREADS` = 1–64; `PAYLOAD_BYTES` = 1024/5120/10240/51200/102400. `DELIVERY_MODE` y `WORKLOAD` aceptan los enums indicados. `COMPRESSION_TYPE`, `LINGER_MS`, `APP_PORT`, `KAFKA_BOOTSTRAP_SERVERS` y `KAFKA_ISOLATION_LEVEL` se pasan a Spring/Kafka y deben ser compatibles con sus respectivas configuraciones. Las variables de Compose se interpolan desde `.env`; los valores de Spring tienen defaults equivalentes. Las variables se validan al arrancar cuando están mapeadas a `LabProperties`.
+
+### Variables de los runners (se exportan en la terminal, no en `.env`)
+
+| Variable | Default | Uso |
+|---|---:|---|
+| `GENERATOR_TIMEOUT_SECONDS` | 600 | Deadline global de generación por run |
+| `WARMUP_MESSAGES` | 10000 | Mensajes de warm-up antes de cada escenario |
+| `SCENARIO_REPETITIONS` | 3 | Repeticiones de cada escenario; stress usa 1 por defecto |
+| `RESOURCE_SAMPLE_INTERVAL_SECONDS` | 5 | Intervalo de muestreo de memoria, heap, GC y lag |
+| `SECONDARY_MESSAGES` | 100000 | Mensajes por repetición de cada escenario secundario |
+| `STRESS_MESSAGES` | 5000000 | Límite acumulado del stress runner |
+| `STRESS_STEP_MESSAGES` | 100000 | Incremento de mensajes por escalón de stress |
+| `STRESS_CONCURRENCY` | 20 | Concurrencia del stress runner |
+| `STRESS_PAYLOAD_BYTES` | 102400 | Payload del stress runner |
+| `STRESS_WORKLOAD` | HEAVY | Perfil de carga del stress runner |
+| `STRESS_DELIVERY_MODE` | EXACTLY_ONCE | Semántica del stress runner |
+| `STRESS_REPETITIONS` | 1 | Repeticiones por escalón |
+
+Ejemplo Linux/macOS: `RESOURCE_SAMPLE_INTERVAL_SECONDS=2 WARMUP_MESSAGES=5000 bash scripts/run-benchmark.sh 1000000`. En Windows, establece las variables con `set VARIABLE=valor` antes de invocar el `.bat`.
+
+## Resultados
+
+Cada ejecución medida crea `benchmark-results/<runId>/` con:
+
+- `summary.json`: configuración, tiempos, throughput validado y latencias.
+- `results.csv`: tabla agregada de escenarios.
+- `validation.json`: integridad independiente (expected, valid, missing, duplicate, unexpected, invalid y DLT).
+- `environment.json`: SO, arquitectura, CPU lógica, Java, Docker, memoria del contenedor, heap JVM, pausas GC y lag del consumer cuando las métricas están disponibles. `prometheus-metrics.txt` conserva el scrape final y `prometheus-sample-*.txt` los scrapes periódicos usados para los agregados. Los recursos se muestrean periódicamente durante la generación y validación (`RESOURCE_SAMPLE_INTERVAL_SECONDS`, por defecto 5 s). `resource-samples.json` conserva cada muestra y `environment.json` agrega máximos de memoria/heap, porcentaje máximo de memoria del contenedor, lag máximo y deltas de GC entre primera y última muestra; los contadores GC también conservan su valor acumulado. Los valores no disponibles aparecen como null.
+- `execution.log`: salida del generador.
+- `report.md`: resumen legible.
+
+Los offsets auxiliares y logs temporales de warm-up están ignorados por Git. Los datos persistentes de Kafka y los informes anteriores no se borran entre ejecuciones.
+
+## Métricas y dashboard
+
+Prometheus recoge métricas de entradas, salidas, fallos, reintentos, DLT, procesamiento, publicación, latencia end-to-end y JVM. Grafana carga el dashboard automáticamente. El lag de Kafka solo aparecerá si el runtime/exporter lo expone.
+
+## Troubleshooting
+
+- **Docker no responde:** abre Docker Desktop y espera a que el Engine esté listo; vuelve a ejecutar el launcher.
+- **Puerto ocupado:** libera 9094, 8080, 9090 o 3000 y reinicia Compose.
+- **La app no arranca:** consulta `docker compose logs app kafka`.
+- **Kafka no está healthy:** consulta `docker compose logs kafka`; no borres el volumen como primera medida.
+- **Falla la validación:** conserva `execution.log`, `validation.json` y los logs de Compose; no interpretes un benchmark con integridad FAIL como throughput válido.
+- **Falta Python:** instala Python 3.10+ y asegúrate de que `python3` o `python` está en PATH.
+
+## Documentos
+
+- [PRD.md](PRD.md): contrato funcional y técnico.
+- [BACKLOG.md](BACKLOG.md): tareas, dependencias, pruebas y evidencias.
+- [AGENTS.md](AGENTS.md): guía canónica para agentes.
+- [CLAUDE.md](CLAUDE.md): punto de entrada de compatibilidad.
