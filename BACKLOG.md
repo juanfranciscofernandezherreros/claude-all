@@ -205,7 +205,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B08 — Validador independiente
 **Depende:** B04, B05.
-- [x] B08.1 **DONE — pendiente de e2e completo.** Validador independiente usa snapshot de offsets y ahora espera a que el consumer group `kafka-lab` confirme los offsets de entrada antes de capturar los endOffsets finales de output/DLT (`2a300e9`); evita terminar mientras el listener aún procesa mensajes. Smoke de 100 mensajes previo pasó; la primera CI encontró el scope incorrecto de `processingComplete`, corregido en `4f92990`; nueva CI verificará compilación y sincronización.
+- [x] B08.1 **DONE — pendiente de prueba a escala.** Validador espera al commit del consumer group `kafka-lab` antes de fijar endOffsets finales de output/DLT (`2a300e9`); corrige carrera donde podía terminar antes de que el listener publicara todas las salidas. CI `4f92990`: `clean verify` BUILD SUCCESS y smoke e2e de 100 mensajes terminó con `processingComplete=true`, `status=PASS`. Pendiente validar 10k/1M y modos de entrega.
   - Pasos: leer desde beginning para runId; determinar límites/end offsets; recorrer particiones hasta capturar todos los registros del run; excluir transacciones abortadas en EOS.
   - Artefactos: ValidationRunner y Kafka reader independiente.
   - Prueba: validador termina cuando alcanza los offsets objetivo y no depende de contadores internos del consumer.
@@ -213,7 +213,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: obtener rango esperado 1..N; almacenar IDs vistos en estructura acotada/disco; contar ocurrencias; verificar schema/checksum/sequence; agregar DLT y fallidos.
   - Artefactos: ValidationReport y almacenamiento temporal limpiable.
   - Prueba: dataset sintético detecta missing, duplicate, unexpected, corrupto y DLT por separado.
-- [x] B08.3 **DONE — pendiente de anomalías.** `validation.json` incluye contadores, latencia y estado; ahora registra `processingComplete` y no declara PASS si vence el timeout antes de que el consumer group confirme el rango de entrada (`2a300e9`). scope corregido en `4f92990`; pendientes fixtures para cada anomalía y CI verde.
+- [x] B08.3 **DONE — pendiente de fixtures de anomalías.** `validation.json` incluye contadores, latencia, `processingComplete` y no declara PASS si el grupo no ha confirmado offsets (`2a300e9`, scope fix `4f92990`). CI `4f92990`: smoke 100 mensajes, `processingComplete=true`, `status=PASS`, exit code 0. Pendientes tests missing/duplicate/unexpected/corrupto/DLT.
   - Pasos: incluir expected/valid/failed/DLT/missing/duplicate/unexpected/invalid; incluir runId y timestamp; definir exit 0 solo si criterios PRD pasan.
   - Artefactos: validation.json y CLI validate.
   - Prueba: caso íntegro exit 0; cada anomalía exit no cero.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente benchmark 1M.** CI `44524836580` completó `./mvnw -B clean verify` (8 tests, 0 fallos, 0 omitidos), build Docker Kafka+app, health UP, smoke e2e de 100 mensajes (`published=100`, `validation.status=PASS`) y `docker compose down -v`. El fallo de permisos del bind mount quedó corregido con `chmod 777`/ACL antes del arranque (`c47c93f` y commits asociados). Pendiente ejecutar benchmark 1M y matriz completa.
+- [x] B10.4 **DONE — pendiente benchmark 1M.** CI `4f92990`: `./mvnw -B clean verify` BUILD SUCCESS (8 tests, 0 fallos, 0 omitidos), build Docker Kafka+app, health UP, smoke e2e 100 mensajes (`published=100`, `processingComplete=true`, `validation.status=PASS`) y `docker compose down -v`. Permisos del bind mount corregidos con `chmod 777`/ACL. Pendiente ejecutar benchmark 1M y matriz completa.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
