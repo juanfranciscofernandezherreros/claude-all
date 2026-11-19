@@ -157,7 +157,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: configurar ack manual/record listener; propagar fallo de publish; retry 3 veces con backoff; tras último fallo enviar DLT; confirmar offset solo cuando salida o DLT esté confirmada.
   - Artefactos: error handler/retry config y tests.
   - Prueba: forzar error transitorio y permanente; comprobar número de intentos, DLT y offsets.
-- [x] B05.4 **DONE — pendiente de CI.** Tests de DLT cubren JSON malformado, schemaVersion/eventType no soportados, tamaño de payload incorrecto y messageId/sequence inconsistente; verifican DLT antes de ACK y payload/errorType (`63377dc`, `e16621b`). CI `44529574468` ya pasó el caso de JSON malformado; CI nueva ejecutará los casos adicionales.
+- [x] B05.4 **DONE.** Tests cubren JSON malformado, schemaVersion/eventType no soportados, tamaño de payload incorrecto y messageId/sequence inconsistente; verifican DLT antes de ACK y payload/errorType (`63377dc`, `e16621b`). CI `44529756744` ejecutó `clean verify` con todos los tests superados.
   - Pasos: clasificar errores permanentes vs transitorios; serializar original crudo si JSON inválido; truncar stack/message de error para no inflar DLT; publicar DLT con ACK.
   - Artefactos: DltPublisher y modelo DLT.
   - Prueba: JSON malformado y campo inválido aparecen una sola vez en DLT; no producen output normal.
