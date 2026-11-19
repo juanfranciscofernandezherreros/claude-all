@@ -52,8 +52,6 @@ public class InputMessageListener {
             publishDlt(raw, e);
             metrics.failed();
             metrics.stopProcessing(processingSample);
-            metrics.failed();
-            metrics.stopProcessing(processingSample);
             acknowledgment.acknowledge();
             return;
         }
@@ -62,6 +60,8 @@ public class InputMessageListener {
             String reason = violations.stream().map(v -> v.getPropertyPath() + " " + v.getMessage()).collect(Collectors.joining("; "));
             if (reason.isBlank()) reason = "Unsupported schemaVersion or eventType";
             publishDlt(raw, new IllegalArgumentException(reason));
+            metrics.failed();
+            metrics.stopProcessing(processingSample);
             acknowledgment.acknowledge();
             return;
         }
