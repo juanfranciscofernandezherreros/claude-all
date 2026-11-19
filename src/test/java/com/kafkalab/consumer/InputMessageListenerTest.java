@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafkalab.config.LabProperties;
+import com.kafkalab.exception.KafkaPublishException;
 import com.kafkalab.metrics.LabMetrics;
 import com.kafkalab.model.DltMessage;
 import com.kafkalab.model.InputMessage;
@@ -122,13 +123,14 @@ class InputMessageListenerTest {
                 new InputMessage.Payload(1, payload));
         ConsumerRecord<String, String> record = new ConsumerRecord<>("input-topic", 0, 9L,
                 input.messageId(), mapper.writeValueAsString(input));
-        doThrow(new IllegalStateException("broker unavailable"))
+        doThrow(new KafkaPublishException("broker unavailable", new RuntimeException("broker unavailable")))
                 .when(publisher).publish(eq("output-topic"), eq(input.messageId()), anyString());
 
-        IllegalStateException failure = assertThrows(IllegalStateException.class,
+        KafkaPublishException failure = assertThrows(KafkaPublishException.class,
                 () -> listener.onMessage(record, acknowledgment, consumer));
 
         assertEquals("broker unavailable", failure.getMessage());
+        assertEquals("broker unavailable", failure.getCause().getMessage());
         verify(acknowledgment, never()).acknowledge();
         verify(publisher).publish(eq("output-topic"), eq(input.messageId()), anyString());
     }
