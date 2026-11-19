@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente benchmark 1M y matriz completa.** CI `44528276019`: `clean verify` BUILD SUCCESS (10 tests, 0 fallos, 0 omitidos), Docker Kafka 3.9.1 + app construidos, health UP, warm-up CI 100, tres repeticiones de 100 mensajes (`processingComplete=true`, `status=PASS`), siete artefactos y cinco métricas runtime no nulas; stack cerrado con `docker compose down -v`. Falta ejecutar benchmark 1M/matriz completa en el hardware objetivo.
+- [x] B10.4 **DONE — pendiente benchmark 1M y matriz completa.** CI `44528276019`: `clean verify` BUILD SUCCESS (10 tests, 0 fallos, 0 omitidos), Docker Kafka 3.9.1 + app construidos, health UP, warm-up CI 100, tres repeticiones de 100 mensajes (`processingComplete=true`, `status=PASS`), siete artefactos y cinco métricas runtime no nulas; stack cerrado con `docker compose down -v`. CI `44529663590` tuvo error transitorio Maven Central durante el build Docker (POM parent no disponible); Dockerfile reforzado con caché/reintentos (`f57fc4a`). Falta benchmark 1M/matriz completa en hardware objetivo y nueva CI.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
