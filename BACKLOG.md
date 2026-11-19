@@ -284,7 +284,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Prueba: revisión de consistencia con PRD/AGENTS y confirmación de que la guía no exige nuevas dependencias ni cambios funcionales.
 
 ### B10.8 — Convenciones obligatorias de anotaciones Lombok y Spring
-- [x] B10.8 **DONE — convención documentada para código nuevo y modificado.** Adaptadas al proyecto las reglas de `springboot-agent-rules/docs/annotations.md`: Lombok (`@RequiredArgsConstructor`, `@Slf4j`, builder con prefijo `with`, evitar `@Data`) y anotaciones Spring para controllers, services, configuración, validación y transacciones. Se explicitan límites para no añadir dependencias ni interfaces artificiales y para proteger contratos Kafka/EOS.
+- [x] B10.8 **DONE — pendiente de verificación CI.** Convenciones documentadas en `AGENTS.md` y auditadas sobre el código Java de `main`. Ajustados cinco beans genéricos de `@Service` a `@Component` (`LabMetrics`, `ChecksumService`, `InputMessageProcessor`, `WorkloadProcessor`, `OutputPublisher`). Se conserva constructor injection explícita: el proyecto no declara Lombok y no se añade la dependencia solo para sustituir constructores correctos; no se detectó necesidad de `@Slf4j` ni builders. No se introdujo `@Autowired`. Evidencia: `1687d3b`; pendiente `./mvnw -B clean verify` en CI.
   - Pasos: incorporar las convenciones a `AGENTS.md`; revisar solapamientos con constructor injection/SOLID; registrar fuente externa.
   - Artefactos: `AGENTS.md`.
   - Prueba: revisión documental de consistencia; CI no aplica porque no cambia código ejecutable.
