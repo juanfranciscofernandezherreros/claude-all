@@ -3,6 +3,7 @@ package com.kafkalab.validation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kafkalab.config.LabProperties;
+import com.kafkalab.exception.ValidationFailedException;
 import com.kafkalab.model.DltMessage;
 import com.kafkalab.model.InputMessage;
 import com.kafkalab.model.OutputMessage;
@@ -191,7 +192,7 @@ public class ValidationRunner implements ApplicationRunner {
         report.put("status", passedValidation ? "PASS" : "FAIL");
         mapper.writerWithDefaultPrettyPrinter().writeValue(reportPath.toFile(), report);
         System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report));
-        if (!"PASS".equals(report.get("status"))) throw new IllegalStateException("Independent validation failed; see " + reportPath);
+        if (!"PASS".equals(report.get("status"))) throw new ValidationFailedException("Independent validation failed; see " + reportPath);
     }
 
     private boolean groupCommittedThrough(AdminClient admin, Map<TopicPartition, Long> required) throws Exception {
