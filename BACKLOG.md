@@ -61,15 +61,15 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B01 — Proyecto y configuración
 **Depende:** B00.
-- [x] B01.1 **DONE — pendiente de verificación.**
+- [x] B01.1 **DONE.** `pom.xml` configura Spring Boot 3.4.5, Java 21 y dependencias requeridas; CI `44537286874` superó `./mvnw clean verify` y Docker build.
   - Pasos: usar parent/BOM Spring Boot; incluir starter web, kafka, actuator, validation, micrometer-registry-prometheus, Jackson, test starter y Testcontainers Kafka; fijar plugin compiler/surefire; evitar dependencias redundantes.
   - Artefactos: pom.xml.
   - Prueba: mvn dependency:tree sin conflictos; compiler release 21.
-- [x] B01.2 **DONE — pendiente de verificación.**
+- [x] B01.2 **DONE — wrapper Windows pendiente de prueba nativa.** `mvnw`/`mvnw.cmd`, `KafkaPerformanceLabApplication` y workflow compilados/ejecutados; CI `44537286874` superó `clean verify`, build Docker y health UP. Falta probar `mvnw.cmd` en Windows.
   - Pasos: generar wrapper oficial; comprobar scripts Unix/Windows y wrapper jar/properties; crear clase main Spring Boot y contexto mínimo.
   - Artefactos: mvnw, mvnw.cmd, .mvn/wrapper/*, clase de arranque.
   - Prueba: ./mvnw -version, mvnw.cmd -version y clean package.
-- [x] B01.3 **DONE — pendiente de verificación.**
+- [x] B01.3 **DONE.** `LabProperties` y validaciones de rangos/concurrencia cargan al iniciar; CI `44537286874` levantó app, health UP y smoke e2e PASS de tres repeticiones.
   - Pasos: agrupar propiedades kafka/app/benchmark/metrics; mapear cada variable PRD (incluidos BATCH_SIZE y PRODUCER_BATCH_BYTES); validar enum/rango/positividad; no registrar secretos; documentar defaults.
   - Artefactos: application.yml, clases @ConfigurationProperties y tests.
   - Prueba: contexto arranca con defaults; valores inválidos impiden arrancar con mensaje accionable.
@@ -109,7 +109,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: declarar campos/tipos exactos del PRD; Bean Validation para null/vacíos/rangos; UTC ISO-8601; schemaVersion=1; preservar entrada original en DLT.
   - Artefactos: model/InputMessage, OutputMessage, DltMessage y tests.
   - Prueba: serialización JSON golden tests y rechazo de cada campo obligatorio inválido.
-- [x] B03.2 **DONE.** CI `44537614948` superó `./mvnw -B clean verify` con test de contrato DTO: secuencia mínima 1 válida, secuencia 0 inválida, campos requeridos, JSON corrupto y round-trip Unicode/timestamp. El smoke e2e de tres repeticiones terminó PASS. Se corrigió discrepancia entre `@PositiveOrZero` y validación del listener usando `@Positive` (`d78159bb`) y se actualizó el test (`b2e5e38c`).
+- [x] B03.2 **DONE.** Unit tests de checksum, IDs, workload y contrato ejecutados por `clean verify`; CI `44537286874` superó compilación y tests sin fallos. Cobertura de bordes ampliada en B03.3/B03.4.
   - Pasos: generar UUID por run; construir ID con secuencia decimal estable; checksum bytes UTF-8 en hexadecimal; evitar dependencia del reloj.
   - Artefactos: RunIdProvider, MessageIdFactory, ChecksumService.
   - Prueba: vectores SHA-256 conocidos; misma entrada produce mismo ID/checksum; secuencias no colisionan.
