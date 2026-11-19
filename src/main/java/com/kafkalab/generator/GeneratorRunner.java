@@ -42,8 +42,9 @@ public class GeneratorRunner implements ApplicationRunner {
             if (isRunIdMissing) throw new InvalidCommandLineException("--run-id requires a non-blank value");
             runId = runIdValues.get(0);
         }
+        final String generationRunId = runId;
         try {
-            offsetSnapshot.capture(runId);
+            offsetSnapshot.capture(generationRunId);
         } catch (Exception snapshotFailure) {
             throw new GenerationFailedException("Could not capture initial Kafka offsets for run " + runId, snapshotFailure);
         }
@@ -64,7 +65,7 @@ public class GeneratorRunner implements ApplicationRunner {
                         long blockEnd = Math.min(count, blockStart + properties.batchSize() - 1);
                         List<String> records = new ArrayList<>((int) (blockEnd - blockStart + 1));
                         for (long sequence = blockStart; sequence <= blockEnd; sequence++) {
-                            InputMessage message = new InputMessage(1, ids.create(runId, sequence), Instant.now(),
+                            InputMessage message = new InputMessage(1, ids.create(generationRunId, sequence), Instant.now(),
                                     "BENCHMARK", new InputMessage.Payload(sequence, payload));
                             records.add(serialize(message));
                         }
