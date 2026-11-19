@@ -18,6 +18,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -100,7 +102,10 @@ public class InputMessageListener {
             kafkaTemplate.executeInTransaction(operations -> {
                 try {
                     operations.send(topic, key, value).get(30, TimeUnit.SECONDS);
-                } catch (Exception e) {
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new KafkaPublishException("Interrupted during transactional Kafka publish for topic " + topic, e);
+                } catch (ExecutionException | TimeoutException e) {
                     throw new KafkaPublishException("Transactional Kafka publish failed for topic " + topic, e);
                 }
                 operations.sendOffsetsToTransaction(
