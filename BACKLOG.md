@@ -217,7 +217,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: incluir expected/valid/failed/DLT/missing/duplicate/unexpected/invalid; incluir runId y timestamp; definir exit 0 solo si criterios PRD pasan.
   - Artefactos: validation.json y CLI validate.
   - Prueba: caso íntegro exit 0; cada anomalía exit no cero.
-- [x] B08.4 **DONE — pendiente de CI verde.** Testcontainers publica fixtures controlados en Kafka para missing (2), duplicate (1), unexpected (1), JSON corrupto (1) y DLT (1); ejecuta `ValidationRunner` y comprueba contadores exactos, `valid=1`, `processingComplete=true` y `status=FAIL` (`681a60cf`).
+- [x] B08.4 **DONE — pendiente de CI verde.** Testcontainers publica fixtures controlados en Kafka para missing (2), duplicate (1), unexpected (1), JSON corrupto (1) y DLT (1); ejecuta `ValidationRunner` y comprueba contadores exactos, `valid=1`, `processingComplete=true` y `status=FAIL` (`681a60cf`). Primera CI detectó imports de `Path` y `fail` ausentes (`44533045147`); corregidos en `7a91cfe0`. Nueva CI pendiente.
   - Pasos: construir fixtures pequeños controlados; ejecutar validador; comprobar conteos y clasificación exacta.
   - Artefactos: tests unitarios/integración del validador.
   - Prueba: assertions exactas de cada contador.
