@@ -26,6 +26,11 @@ Esta regla es prioritaria y no se puede omitir:
 - Al completar un micro-paso, registrar evidencia breve; al completar la tarea padre, sincronizar checkbox, estado y evidencia.
 - Antes de cerrar cada sesión, revisar que todas las tareas completadas durante ella tengan `[x]`. Una tarea completada nunca debe quedarse accidentalmente con `[ ]`.
 
+## Política del launcher Windows
+- `RUN-KAFKA-LAB.bat` debe ser autónomo: detectar/iniciar Docker Desktop, esperar un máximo de 120 s, comprobar Compose v2 y ejecutar Docker Compose/benchmarks directamente.
+- No invocar Claude/Claude Code ni añadir `--dangerously-skip-permissions`, `--allow-dangerous`, ni otros bypasses de permisos.
+- Preservar el exit code del benchmark, soportar rutas con espacios (incluida la ruta de Git Bash) y limitar ACL de `benchmark-results` al usuario actual; nunca conceder escritura a `Everyone`.
+
 ## Calidad y seguridad
 - No preguntar por decisiones ya cerradas. Para decisiones menores no especificadas, elegir opción simple compatible y documentar solo si afecta arquitectura.
 - Nunca inventar pruebas, resultados, métricas, hardware o estado PASS/DONE.
