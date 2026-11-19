@@ -28,9 +28,12 @@ warmup="warmup-${name}-$(date +%s)-$$"
 mkdir -p "$results/$warmup"
 chmod 777 "$results/$warmup"
 echo "Warm-up: $name"
-docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
+if ! docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
   --spring.main.web-application-type=none --lab.consumer.enabled=false --generate \
-  --messages=10000 --run-id="$warmup" --timeout-seconds="${GENERATOR_TIMEOUT_SECONDS:-600}" > "$results/$warmup/execution.log" 2>&1
+  --messages=10000 --run-id="$warmup" --timeout-seconds="${GENERATOR_TIMEOUT_SECONDS:-600}" > "$results/$warmup/execution.log" 2>&1; then
+  cat "$results/$warmup/execution.log"
+  exit 1
+fi
 for repetition in 1 2 3; do
   run_id="${name}-r${repetition}-$(date -u +%Y%m%dT%H%M%S)-$$"
   mkdir -p "$results/$run_id"
