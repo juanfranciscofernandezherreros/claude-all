@@ -1,10 +1,17 @@
 package com.kafkalab.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kafkalab.model.DltMessage;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
-import com.kafkalab.metrics.LabMetrics;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.util.backoff.ExponentialBackOffWithMaxRetries;
@@ -12,15 +19,43 @@ import org.springframework.util.backoff.ExponentialBackOffWithMaxRetries;
 @Configuration
 public class KafkaErrorHandlerConfiguration {
     @Bean
-    DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> template, LabProperties properties, LabMetrics metrics) {
-        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
-                template, (record, exception) -> new TopicPartition(properties.dltTopic(), record.partition()));
+    DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> template, LabProperties properties,
+                                          ObjectMapper mapper, com.kafkalab.metrics.LabMetrics metrics) {
         ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
         backOff.setInitialInterval(1000L);
         backOff.setMultiplier(2.0);
         backOff.setMaxInterval(10000L);
+
+        BiConsumer<ConsumerRecord<?, ?>, Exception> recoverer;
+        boolean exactlyOnce = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
+        if (exactlyOnce) {
+            recoverer = (record, exception) -> {
+                try {
+                    DltMessage dlt = new DltMessage(String.valueOf(record.value()), exception.getClass().getSimpleName(),
+                            String.valueOf(exception.getMessage()), Instant.now());
+                    String json = mapper.writeValueAsString(dlt);
+                    template.executeInTransaction(operations -> {
+                        try {
+                            operations.send(properties.dltTopic(), String.valueOf(record.key()), json).get(30, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            throw new IllegalStateException("Transactional DLT publish failed", e);
+                        }
+                        operations.sendOffsetsToTransaction(
+                                Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
+                                "kafka-lab");
+                        return true;
+                    });
+                } catch (Exception e) {
+                    throw new IllegalStateException("Could not recover failed record transactionally", e);
+                }
+            };
+        } else {
+            recoverer = new DeadLetterPublishingRecoverer(template,
+                    (record, exception) -> new TopicPartition(properties.dltTopic(), record.partition()));
+        }
         DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
         handler.setRetryListeners((record, exception, deliveryAttempt) -> metrics.retry());
+        if (exactlyOnce) handler.setAckAfterHandle(false);
         return handler;
     }
 }
