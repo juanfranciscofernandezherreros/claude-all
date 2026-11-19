@@ -13,7 +13,10 @@ print(json.dumps({"messagesPerRun": messages, "concurrency": concurrency,
                   "deliveryModes": ["AT_LEAST_ONCE", "EXACTLY_ONCE"],
                   "payloadBytes": 1024, "workload": "LIGHT",
                   "batchSize": 1000, "producerBatchBytes": 131072,
-                  "compression": "lz4", "warmupMessages": 10000}, indent=2))
+                  "compression": "lz4", "warmupMessages": 10000,
+                  "modeOrder": [["AT_LEAST_ONCE", "EXACTLY_ONCE"] if repetition % 2
+                                else ["EXACTLY_ONCE", "AT_LEAST_ONCE"]
+                                for repetition in range(1, repetitions + 1)]}, indent=2))
 PY
   exit 0
 fi
@@ -61,7 +64,12 @@ docker compose up -d --build
 
 # Alternate modes in each pair to reduce ordering/thermal bias.
 for repetition in $(seq 1 "$repetitions"); do
-  for delivery in AT_LEAST_ONCE EXACTLY_ONCE; do
+  if (( repetition % 2 == 1 )); then
+    delivery_order=(AT_LEAST_ONCE EXACTLY_ONCE)
+  else
+    delivery_order=(EXACTLY_ONCE AT_LEAST_ONCE)
+  fi
+  for delivery in "${delivery_order[@]}"; do
     bash scripts/run-scenario.sh "$scenario_prefix-$delivery-pair$repetition" \
       "$messages" "$concurrency" 1024 LIGHT "$delivery"
   done
