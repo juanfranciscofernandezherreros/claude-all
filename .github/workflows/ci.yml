@@ -57,11 +57,14 @@ jobs:
           for row in rows:
               assert row["status"] == "PASS", row
               folder = Path("benchmark-results") / row["runId"]
-              for name in ("offsets.json", "execution.log", "validation.json", "summary.json", "environment.json", "report.md"):
+              for name in ("offsets.json", "execution.log", "validation.json", "summary.json", "environment.json", "report.md", "prometheus-metrics.txt"):
                   assert (folder / name).is_file(), f"missing {folder / name}"
               report = json.loads((folder / "validation.json").read_text(encoding="utf-8"))
               assert report["status"] == "PASS" and report["processingComplete"] is True
-          print("3 benchmark repetitions passed; all six artifacts present.")
+              environment = json.loads((folder / "environment.json").read_text(encoding="utf-8"))
+              for metric in ("memoryBytes", "heapUsedBytes", "gcPauseCount", "gcPauseSeconds", "kafkaConsumerLag"):
+                  assert environment[metric] is not None, f"missing environment metric {metric}: {environment}"
+          print("3 benchmark repetitions passed; all artifacts and runtime metrics present.")
           PY
       - name: Stop Kafka stack
         if: always()
