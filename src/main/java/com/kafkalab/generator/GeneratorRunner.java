@@ -5,19 +5,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kafkalab.config.LabProperties;
 import com.kafkalab.exception.GenerationFailedException;
 import com.kafkalab.model.InputMessage;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.core.env.Environment;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -27,11 +20,12 @@ public class GeneratorRunner implements ApplicationRunner {
     private final ObjectMapper mapper;
     private final LabProperties properties;
     private final MessageIdFactory ids;
-    private final Environment environment;
+    private final GeneratorOffsetSnapshot offsetSnapshot;
 
     public GeneratorRunner(KafkaTemplate<String, String> kafka, ObjectMapper mapper,
-                           LabProperties properties, MessageIdFactory ids, Environment environment) {
-        this.kafka = kafka; this.mapper = mapper; this.properties = properties; this.ids = ids; this.environment = environment;
+                           LabProperties properties, MessageIdFactory ids, GeneratorOffsetSnapshot offsetSnapshot) {
+        this.kafka = kafka; this.mapper = mapper; this.properties = properties; this.ids = ids;
+        this.offsetSnapshot = offsetSnapshot;
     }
 
     @Override
@@ -44,7 +38,7 @@ public class GeneratorRunner implements ApplicationRunner {
                 ? Long.parseLong(args.getOptionValues("timeout-seconds").get(0)) : 600L;
         if (timeoutSeconds < 1) throw new IllegalArgumentException("--timeout-seconds must be positive");
         String runId = args.containsOption("run-id") ? args.getOptionValues("run-id").get(0) : ids.newRunId();
-        snapshotOffsets(runId);
+        offsetSnapshot.capture(runId);
         long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
         String payload = payloadFor(properties.payloadBytes());
         ExecutorService pool = Executors.newFixedThreadPool(properties.generatorThreads());
@@ -151,29 +145,5 @@ public class GeneratorRunner implements ApplicationRunner {
         return remaining;
     }
 
-    private void snapshotOffsets(String runId) throws Exception {
-        Properties config = new Properties();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                environment.getProperty("spring.kafka.bootstrap-servers", "localhost:9094"));
-        config.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-lab-offset-snapshot-" + UUID.randomUUID());
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config)) {
-            List<TopicPartition> partitions = new ArrayList<>();
-            for (String topic : List.of(properties.inputTopic(), properties.outputTopic(), properties.dltTopic())) {
-                for (PartitionInfo info : consumer.partitionsFor(topic)) {
-                    partitions.add(new TopicPartition(topic, info.partition()));
-                }
-            }
-            consumer.assign(partitions);
-            Map<TopicPartition, Long> offsets = consumer.endOffsets(partitions);
-            List<Map<String, Object>> snapshot = new ArrayList<>();
-            offsets.forEach((partition, offset) -> snapshot.add(Map.of(
-                    "topic", partition.topic(), "partition", partition.partition(), "offset", offset)));
-            Path folder = Path.of("benchmark-results", runId);
-            Files.createDirectories(folder);
-            mapper.writerWithDefaultPrettyPrinter().writeValue(folder.resolve("offsets.json").toFile(), snapshot);
-        }
-    }
+
 }
