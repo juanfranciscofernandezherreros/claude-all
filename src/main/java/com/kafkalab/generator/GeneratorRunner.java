@@ -78,7 +78,7 @@ public class GeneratorRunner implements ApplicationRunner {
             for (Future<?> worker : workers) worker.get();
             kafka.flush();
             double seconds = (System.nanoTime() - start) / 1_000_000_000d;
-            System.out.printf("{\"runId\":\"%s\",\"published\":%d,\"publishSeconds\":%.6f}%n", runId, completed.get(), seconds);
+            System.out.printf("{\"runId\":\"%s\",\"published\":%d,\"publishStartEpochMs\":%d,\"publishSeconds\":%.6f}%n", runId, completed.get(), publishStartEpochMs, seconds);
         } finally {
             pool.shutdownNow();
         }
