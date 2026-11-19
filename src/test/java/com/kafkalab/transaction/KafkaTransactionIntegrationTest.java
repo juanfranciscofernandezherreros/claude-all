@@ -68,10 +68,15 @@ class KafkaTransactionIntegrationTest {
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProperties);
              KafkaProducer<String, String> transactionalProducer = new KafkaProducer<>(producerProperties)) {
             consumer.subscribe(List.of(input));
-            var records = consumer.poll(Duration.ofSeconds(20));
+            var records = consumer.poll(Duration.ofSeconds(1));
+            long waitUntil = System.nanoTime() + Duration.ofSeconds(20).toNanos();
+            while (records.isEmpty() && System.nanoTime() < waitUntil) records = consumer.poll(Duration.ofMillis(500));
             assertEquals(1, records.count());
             var consumed = records.iterator().next();
             transactionalProducer.initTransactions();
+            transactionalProducer.beginTransaction();
+            transactionalProducer.send(new ProducerRecord<>(output, consumed.key(), "aborted")).get();
+            transactionalProducer.abortTransaction();
             transactionalProducer.beginTransaction();
             transactionalProducer.send(new ProducerRecord<>(output, consumed.key(), "output")).get();
             transactionalProducer.sendOffsetsToTransaction(
@@ -89,7 +94,9 @@ class KafkaTransactionIntegrationTest {
         readProperties.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
         try (KafkaConsumer<String, String> reader = new KafkaConsumer<>(readProperties)) {
             reader.subscribe(List.of(output));
-            var result = reader.poll(Duration.ofSeconds(20));
+            var result = reader.poll(Duration.ofSeconds(1));
+            long waitUntil = System.nanoTime() + Duration.ofSeconds(20).toNanos();
+            while (result.isEmpty() && System.nanoTime() < waitUntil) result = reader.poll(Duration.ofMillis(500));
             assertEquals(1, result.count());
             assertEquals("output", result.iterator().next().value());
         }
