@@ -165,12 +165,13 @@ jobs:
         run: |
           scenario="ci-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           WARMUP_MESSAGES=100 bash scripts/run-scenario.sh "${scenario}" 100 1 1024 LIGHT AT_LEAST_ONCE
+          WARMUP_MESSAGES=100 bash scripts/run-scenario.sh "${scenario}-eos" 100 1 1024 LIGHT EXACTLY_ONCE
           python3 - <<'PY'
           import csv, json
           from pathlib import Path
           with open("benchmark-results/results.csv", newline="", encoding="utf-8") as stream:
               rows = list(csv.DictReader(stream))
-          assert len(rows) == 3, f"expected 3 repetitions, got {len(rows)}"
+          assert len(rows) == 6, f"expected 6 repetitions across both delivery modes, got {len(rows)}"
           for row in rows:
               assert row["status"] == "PASS", row
               folder = Path("benchmark-results") / row["runId"]
@@ -184,7 +185,7 @@ jobs:
               assert environment["resourceSampleCount"] >= 1, environment
               samples = json.loads((folder / "resource-samples.json").read_text(encoding="utf-8"))
               assert len(samples) == environment["resourceSampleCount"]
-          print("3 benchmark repetitions passed; all artifacts and periodic resource samples present.")
+          assert {row["deliveryMode"] for row in rows} == {"AT_LEAST_ONCE", "EXACTLY_ONCE"}\n          print("6 benchmark repetitions passed across AT_LEAST_ONCE and EXACTLY_ONCE; all artifacts and periodic resource samples present.")
           PY
       - name: Stop Kafka stack
         if: always()
