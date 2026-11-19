@@ -189,7 +189,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B07 — Métricas y dashboard
 **Depende:** B04, B05.
-- [x] B07.1 **DONE — contadores/timers implementados; tests añadidos para counters input/output/failure/retry/DLT y timers processing/publish/end-to-end; primera CI detectó que `SimpleMeterRegistry` no implementa `AutoCloseable` (`44536510987`); eliminado try-with-resources (`d85879df`). Pendiente CI verde y comprobar integración real del retry.**
+- [x] B07.1 **DONE.** Tests verifican counters input/output/failure/retry/DLT y timers processing/publish/end-to-end (`e560e8ec`, fix de test registry `d85879df`); CI `44536647815` superó `clean verify`.
   - Pasos: crear counters para entradas/salidas/fallos/retries/DLT; timers para processing/publish/e2e; histogramas con percentiles; nombres estables.
   - Artefactos: MetricsService y configuración Micrometer.
   - Prueba: tests de incrementos/timers y percentiles disponibles.
