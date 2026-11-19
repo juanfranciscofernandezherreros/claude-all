@@ -291,10 +291,10 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Fuente: https://github.com/juanfranciscofernandezherreros/springboot-agent-rules/blob/master/docs/annotations.md
 
 ### B10.9 — Excepciones propias y semántica de errores
-- [ ] B10.9 **BLOCKED — aplicación parcial; faltan excepciones técnicas/de validación, auditoría completa y CI.** Regla añadida a `AGENTS.md` (`9ee7b51`). `InvalidInputMessageException` ya representa los mensajes que incumplen el contrato; `InputMessageListener` solo envía ese tipo a DLT y los tests verifican el tipo serializado (`8050107`, `71a824f`, `b9c25bd`, `f11b172`). El estado sigue bloqueado hasta adaptar el resto de excepciones y superar las pruebas.
+- [ ] B10.9 **BLOCKED — aplicación parcial; auditoría completa y CI pendientes.** Regla añadida a AGENTS.md (9ee7b51). Excepciones propias incorporadas para entrada inválida, publicación Kafka, serialización, fallo de validación, checksum y generación. Los tests cubren DLT, publicación sin ACK, causa y fallo de validación; ver commits de B10.9.
   - [x] B10.9.1 **DONE — pendiente de verificación CI.** Añadida `InvalidInputMessageException` y aplicada al processor/listener; los tests esperan el tipo propio en DLT.
-  - [ ] B10.9.2 **BLOCKED — pendiente.** Clasificar y adaptar fallos de publicación/serialización/recuperación Kafka, validación final, argumentos CLI, checksum, estadísticas y almacenamiento temporal.
-  - [ ] B10.9.3 **BLOCKED — pendiente.** Auditar todos los `throw`/`catch` de producción y tests; verificar causas, clasificación retryable/no-retryable y compatibilidad de los mensajes DLT.
+  - [x] B10.9.2 **DONE — pendiente de verificación CI.** Clasificados fallos de publicación, serialización, recuperación transaccional, validación final, checksum y generación con tipos propios; se conserva la causa y se restaura el flag de interrupción al interrumpir esperas Kafka. Las precondiciones técnicas locales mantienen excepciones estándar permitidas por AGENTS.md.
+  - [ ] B10.9.3 **BLOCKED — pendiente de completar la auditoría del resto de módulos y comprobar todos los tipos/causas y la política retryable/no-retryable.** La búsqueda localizó los puntos principales en consumer, producer, generator y validator; falta el barrido completo de scripts y todos los tests.
   - Prueba: `./mvnw -B clean verify`, pruebas focalizadas de DLT/reintentos/publicación/validación y smoke de transacciones EOS. Estado CI del commit `f11b172`: sin checks reportados; no se declara PASS.
 
 ### B10.7 — Auditoría y refactor SOLID del código existente
@@ -304,7 +304,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - [ ] B10.7.3 **BLOCKED — pendiente.** Separar lectura Kafka, validación de contrato/integridad, estadísticas y escritura de informes sin aumentar memoria ni cambiar aislamiento por runId.
   - [ ] B10.7.4 **BLOCKED — pendiente.** Revisar DIP/ISP/OCP y contratos de implementaciones donde haya variaciones reales; añadir pruebas de contrato compartidas cuando existan implementaciones intercambiables.
   - Artefactos: clases Java afectadas y tests JUnit/Testcontainers existentes o ampliados; actualizar README/PRD solo si cambia comportamiento (no previsto).
-  - [x] B10.7.5 **DONE — pendiente de verificación CI.** Aplicados nombres descriptivos a condiciones compuestas y reglas de aceptación en `InputMessageProcessor`, `MessageIdFactory`, `LatencyStatistics`, `GeneratorRunner` y `ValidationRunner`. Se mantienen inline las comprobaciones simples y evidentes. Commits: `128d902`, `6423b12`, `41775a8`, `591cbbf`, `3adfa59`. Pendiente ejecutar `./mvnw -B clean verify` y revisar el diff completo.
+  - [x] B10.7.5 **DONE — pendiente de verificación CI.** Aplicados nombres descriptivos a condiciones compuestas y reglas de aceptación en Java; añadidos nombres explícitos a condiciones de política de estrés y validación matemática Python y configuración transaccional. Commits adicionales: fd831a4, add5b8a, 589136d, 8ed5e02, 01af252. Pendiente ./mvnw -B clean verify, py_compile y tests Python.
   - Prueba: `./mvnw -B clean verify`; pruebas de contrato para offsets/ACK, DLT y transacciones EOS; smoke CI del flujo; comparar artefactos y métricas antes/después. No aceptar regresiones ni afirmar mejora de rendimiento sin medición.
 
 **Aceptación final:** PRD Definition of Done satisfecho; instrucciones funcionan desde clon limpio; informe final distingue ejecutado, fallido y bloqueado.
