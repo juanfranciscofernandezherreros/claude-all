@@ -28,7 +28,7 @@ Cada escenario: una precarga/warm-up de 10.000 mensajes no contabilizada y 3 eje
 Suite principal: 1.000.000 mensajes, 1 KiB, LIGHT, AT_LEAST_ONCE; concurrencia 1,2,5,10,20.
 Suite payload: 100.000 mensajes, concurrencia 5, LIGHT, AT_LEAST_ONCE; tamaños 1,5,10,50,100 KiB.
 Suite workload: 100.000 mensajes, concurrencia 5, 1 KiB, AT_LEAST_ONCE; LIGHT/MEDIUM/HEAVY.
-Suite delivery: 100.000 mensajes, concurrencia 5, 1 KiB, LIGHT; AT_LEAST_ONCE y EXACTLY_ONCE.
+Suite delivery secundaria: 100.000 mensajes, concurrencia 5, 1 KiB, LIGHT; AT_LEAST_ONCE y EXACTLY_ONCE. Comparación de entrega dedicada: 1.000.000 de mensajes por modo, tres repeticiones alternadas por defecto, misma configuración para ambos modos y validación independiente de cero missing/duplicate/unexpected/invalid/DLT; concurrencia 10, payload 1 KiB, LIGHT, batch lógico 1.000, producer batch 128 KiB y LZ4 como preset inicial.
 Ejecutar suites secundaria solo con --full-suite; benchmark por defecto ejecuta suite principal. --full-suite ejecuta todas. Stress opcional: aumentar carga por pasos de 100.000 hasta 5.000.000; parar si errores >0, lag crece 3 pasos consecutivos o memoria >85%.
 No cambiar configuración ni descartar ejecuciones lentas. Registrar hardware, SO, Docker, versiones, configuración y hora.
 
@@ -38,7 +38,7 @@ JUnit unit tests: esquema, validación, checksum, errores, configuración. Testc
 Objetivo orientativo, no condición de éxito: end-to-end <60s (~16.667 salidas/s). Informar resultado real y limitaciones de hardware; no falsear PASS si no se ejecutó.
 
 ## 8. Entregables y comandos
-Proyecto Maven con código, Dockerfile, compose.yaml, .env.example, Maven Wrapper, pruebas, scripts y documentación. Scripts: start, stop, benchmark, full-suite, validate. Windows: RUN-KAFKA-LAB.bat; shell scripts equivalentes. Comandos estables: mvnw.cmd clean verify; RUN-KAFKA-LAB.bat; scripts/run-benchmark.bat --messages 1000000; scripts/run-full-suite.bat.
+Proyecto Maven con código, Dockerfile, compose.yaml, .env.example, Maven Wrapper, pruebas, scripts y documentación. Scripts: start, stop, benchmark, full-suite, delivery-comparison, validate. Comparación: `bash scripts/run-delivery-comparison.sh 1000000 10 3` (Windows: `scripts\\run-delivery-comparison.bat 1000000 10 3`). Windows: RUN-KAFKA-LAB.bat; shell scripts equivalentes. Comandos estables: mvnw.cmd clean verify; RUN-KAFKA-LAB.bat; scripts/run-benchmark.bat --messages 1000000; scripts/run-full-suite.bat.
 Cada run en benchmark-results/<runId>/: summary.json, results.csv, validation.json, environment.json, execution.log, report.md. No versionar resultados temporales grandes; incluir informe agregado y CSV pequeño.
 README: prerequisitos exactos, arranque/parada, comandos Windows/Linux, puertos, variables, troubleshooting, interpretación de métricas y ubicación de informes.
 
