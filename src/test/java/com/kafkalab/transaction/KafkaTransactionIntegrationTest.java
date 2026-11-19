@@ -111,5 +111,34 @@ class KafkaTransactionIntegrationTest {
             var committed = admin.listConsumerGroupOffsets("eos-group").partitionsToOffsetAndMetadata().get();
             assertEquals(1L, committed.get(new TopicPartition(input, 0)).offset());
         }
+
+        Properties uncommittedProperties = new Properties();
+        uncommittedProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());
+        uncommittedProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "eos-uncommitted-" + UUID.randomUUID());
+        uncommittedProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        uncommittedProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        uncommittedProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        uncommittedProperties.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_uncommitted");
+        try (KafkaConsumer<String, String> reader = new KafkaConsumer<>(uncommittedProperties)) {
+            reader.subscribe(List.of(output));
+            var result = reader.poll(Duration.ofSeconds(2));
+            assertEquals(2, result.count());
+            assertTrue(result.records(output).stream().anyMatch(record -> "aborted".equals(record.value())));
+            assertTrue(result.records(output).stream().anyMatch(record -> "output".equals(record.value())));
+        }
+
+        Properties restartProperties = new Properties();
+        restartProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());
+        restartProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "eos-group");
+        restartProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        restartProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        restartProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        restartProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        restartProperties.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+        try (KafkaConsumer<String, String> restarted = new KafkaConsumer<>(restartProperties)) {
+            restarted.subscribe(List.of(input));
+            var replayed = restarted.poll(Duration.ofSeconds(2));
+            assertTrue(replayed.isEmpty(), "restarted group must resume after the transactionally committed offset");
+        }
     }
 }
