@@ -46,7 +46,15 @@ public class GeneratorRunner implements ApplicationRunner {
                             InputMessage message = new InputMessage(1, ids.create(runId, sequence), Instant.now(),
                                     "BENCHMARK", new InputMessage.Payload(sequence, payload));
                             String json = mapper.writeValueAsString(message);
-                            kafka.send(properties.inputTopic(), message.messageId(), json).get(60, TimeUnit.SECONDS);
+                            if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
+                                kafka.executeInTransaction(operations -> {
+                                    try { operations.send(properties.inputTopic(), message.messageId(), json).get(60, TimeUnit.SECONDS); }
+                                    catch (Exception e) { throw new CompletionException(e); }
+                                    return true;
+                                });
+                            } else {
+                                kafka.send(properties.inputTopic(), message.messageId(), json).get(60, TimeUnit.SECONDS);
+                            }
                             long n = completed.incrementAndGet();
                             if (n % 10_000 == 0) System.out.printf("published=%d/%d%n", n, count);
                         } catch (Exception e) {
