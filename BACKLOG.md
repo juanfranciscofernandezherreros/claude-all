@@ -45,10 +45,10 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: contrastar esquemas entrada/salida/DLT; comprobar reglas EOS/at-least-once; confirmar fórmulas, escenarios y variables; corregir contradicciones en PRD antes del código.
   - Artefactos: PRD corregido solo si existe contradicción real.
   - Prueba: revisar que backlog y PRD usan mismos nombres, valores y criterios.
-- [ ] B00.3 Crear árbol Maven indicado y .gitignore para target, logs, volúmenes y resultados masivos; conservar solo informes agregados pequeños.
+- [ ] B00.3 **BLOCKED — parcial.** Creado `.gitignore` en commit `43462c2` para target, secretos, logs, datos Kafka/Docker y artefactos masivos. Pendiente crear/validar árbol Maven desde checkout local y ejecutar `git check-ignore`; la API de GitHub no permite ejecutar esos comandos ni almacenar directorios vacíos.
   - Pasos: crear directorios del layout; ignorar target, .env, logs, datos Kafka, temporales y resultados de gran tamaño; permitir .env.example y resumen de benchmark.
   - Artefactos: árbol base, .gitignore.
-  - Prueba: git check-ignore confirma artefactos locales y git status conserva los archivos fuente.
+  - Prueba: archivo `.gitignore` revisado; `git check-ignore` y `git status` pendientes en entorno local.
 **Aceptación:** inventario y árbol creados; no hay decisiones abiertas ni contradicciones en contrato.
 
 ### B01 — Proyecto y configuración
