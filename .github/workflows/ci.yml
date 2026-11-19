@@ -22,6 +22,8 @@ jobs:
           cache: maven
       - name: Make Maven launcher executable
         run: chmod +x mvnw
+      - name: Check shell syntax
+        run: bash -n scripts/*.sh
       - name: Validate Docker Compose
         run: docker compose config --quiet
       - name: Inspect Docker runtime
@@ -42,15 +44,25 @@ jobs:
           done
           docker compose logs --no-color
           exit 1
-      - name: End-to-end Kafka smoke test
+      - name: End-to-end benchmark smoke test
         run: |
-          run_id="ci-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
-            --spring.main.web-application-type=none --lab.consumer.enabled=false --generate \
-            --messages=100 --run-id="${run_id}"
-          docker compose run --rm --no-deps -e LAB_CONSUMER_ENABLED=false app \
-            --spring.main.web-application-type=none --lab.consumer.enabled=false --validate \
-            --run-id="${run_id}" --messages=100 --timeout-seconds=120
+          scenario="ci-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          bash scripts/run-scenario.sh "${scenario}" 100 1 1024 LIGHT AT_LEAST_ONCE
+          python3 - <<'PY'
+          import csv, json
+          from pathlib import Path
+          with open("benchmark-results/results.csv", newline="", encoding="utf-8") as stream:
+              rows = list(csv.DictReader(stream))
+          assert len(rows) == 3, f"expected 3 repetitions, got {len(rows)}"
+          for row in rows:
+              assert row["status"] == "PASS", row
+              folder = Path("benchmark-results") / row["runId"]
+              for name in ("offsets.json", "execution.log", "validation.json", "summary.json", "environment.json", "report.md"):
+                  assert (folder / name).is_file(), f"missing {folder / name}"
+              report = json.loads((folder / "validation.json").read_text(encoding="utf-8"))
+              assert report["status"] == "PASS" and report["processingComplete"] is True
+          print("3 benchmark repetitions passed; all six artifacts present.")
+          PY
       - name: Stop Kafka stack
         if: always()
         run: docker compose down -v
