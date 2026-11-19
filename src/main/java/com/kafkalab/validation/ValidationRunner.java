@@ -114,9 +114,13 @@ public class ValidationRunner implements ApplicationRunner {
                             OutputMessage output = mapper.readValue(record.value(), OutputMessage.class);
                             if (!output.messageId().startsWith(runId + "-")) continue;
                             long sequence = output.result().sequence();
-                            if (output.schemaVersion() != 1 || !"OK".equals(output.status())
-                                    || !output.messageId().equals(runId + "-" + sequence)
-                                    || !output.result().checksum().matches("[0-9a-f]{64}")) {
+                            boolean hasUnsupportedSchemaVersion = output.schemaVersion() != 1;
+                            boolean hasUnexpectedOutputStatus = !"OK".equals(output.status());
+                            boolean hasMessageIdSequenceMismatch = !output.messageId().equals(runId + "-" + sequence);
+                            boolean hasInvalidChecksumFormat = !output.result().checksum().matches("[0-9a-f]{64}");
+                            boolean hasInvalidOutputContract = hasUnsupportedSchemaVersion || hasUnexpectedOutputStatus
+                                    || hasMessageIdSequenceMismatch || hasInvalidChecksumFormat;
+                            if (hasInvalidOutputContract) {
                                 invalid++;
                             } else if (sequence < 1 || sequence > expected) {
                                 unexpected++;
@@ -176,7 +180,15 @@ public class ValidationRunner implements ApplicationRunner {
             latency.put("maxNanos", latencyNanos[latencyCount - 1]);
         }
         report.put("latency", latency);
-        report.put("status", processingComplete && missing == 0 && duplicates == 0 && unexpected == 0 && invalid == 0 && dlt == 0 ? "PASS" : "FAIL");
+        boolean hasCompleteProcessing = processingComplete;
+        boolean hasNoMissingOutputs = missing == 0;
+        boolean hasNoDuplicateOutputs = duplicates == 0;
+        boolean hasNoUnexpectedOutputs = unexpected == 0;
+        boolean hasNoInvalidRecords = invalid == 0;
+        boolean hasNoDeadLetterRecords = dlt == 0;
+        boolean passedValidation = hasCompleteProcessing && hasNoMissingOutputs && hasNoDuplicateOutputs
+                && hasNoUnexpectedOutputs && hasNoInvalidRecords && hasNoDeadLetterRecords;
+        report.put("status", passedValidation ? "PASS" : "FAIL");
         mapper.writerWithDefaultPrettyPrinter().writeValue(reportPath.toFile(), report);
         System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report));
         if (!"PASS".equals(report.get("status"))) throw new IllegalStateException("Independent validation failed; see " + reportPath);
