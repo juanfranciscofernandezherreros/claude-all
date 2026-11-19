@@ -61,7 +61,8 @@ public class GeneratorRunner implements ApplicationRunner {
                             records.add(serialize(message));
                         }
                         List<Future<?>> acknowledgements = new ArrayList<>(records.size());
-                        if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
+                        boolean isExactlyOnceDeliveryEnabled = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
+                        if (isExactlyOnceDeliveryEnabled) {
                             kafka.executeInTransaction(operations -> {
                                 List<Future<?>> transactionAcks = new ArrayList<>(records.size());
                                 for (int i = 0; i < records.size(); i++) {
