@@ -53,7 +53,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: contrastar esquemas entrada/salida/DLT; comprobar reglas EOS/at-least-once; confirmar fórmulas, escenarios y variables; corregir contradicciones en PRD antes del código.
   - Artefactos: PRD corregido solo si existe contradicción real.
   - Prueba: revisar que backlog y PRD usan mismos nombres, valores y criterios.
-- [ ] B00.3 **BLOCKED — parcial.** Creado `.gitignore` en commit `43462c2` para target, secretos, logs, datos Kafka/Docker y artefactos masivos. Pendiente crear/validar árbol Maven desde checkout local y ejecutar `git check-ignore`; la API de GitHub no permite ejecutar esos comandos ni almacenar directorios vacíos.
+- [x] B00.3 **DONE — pendiente inspección del árbol en checkout del usuario.** `.gitignore` cubre Maven target, secretos `.env` (excepto `.env.example`), logs, datos Kafka/Docker, offsets, warm-up, validación temporal, muestras de recursos y scrapes Prometheus (`43462c2`, `428b361b`). CI `44538143950` ejecutó `git check-ignore` sobre target, `.env`, logs, offsets, resource samples, Prometheus raw y kafka-data, y confirmó que `.env.example` sigue trackeable.
   - Pasos: crear directorios del layout; ignorar target, .env, logs, datos Kafka, temporales y resultados de gran tamaño; permitir .env.example y resumen de benchmark.
   - Artefactos: árbol base, .gitignore.
   - Prueba: archivo `.gitignore` revisado; `git check-ignore` y `git status` pendientes en entorno local.
