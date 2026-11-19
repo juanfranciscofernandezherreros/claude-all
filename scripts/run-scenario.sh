@@ -60,7 +60,7 @@ java_version=$(docker compose exec -T app java -version 2>&1 | sed -n '1p')
 docker_version=$(docker version --format '{{.Server.Version}}')
 warmup_messages="${WARMUP_MESSAGES:-10000}"
 if [[ ! "$warmup_messages" =~ ^[1-9][0-9]*$ ]]; then echo "ERROR: WARMUP_MESSAGES must be a positive integer." >&2; exit 2; fi
-warmup="warmup-${name}-$(date +%s)-$"
+warmup="warmup-${name}-$(date +%s)-$$"
 mkdir -p "$results/$warmup"
 chmod 777 "$results/$warmup"
 echo "Warm-up: $name"
