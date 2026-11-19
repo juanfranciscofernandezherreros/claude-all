@@ -152,6 +152,15 @@ class KafkaTransactionIntegrationTest {
         String topic = "generator-load-" + UUID.randomUUID();
         try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             admin.createTopics(List.of(new NewTopic(topic, 24, (short) 1))).all().get();
+            long leaderDeadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
+            boolean leadersReady = false;
+            while (!leadersReady && System.nanoTime() < leaderDeadline) {
+                var description = admin.describeTopics(List.of(topic)).allTopicNames().get().get(topic);
+                leadersReady = description.partitions().size() == 24
+                        && description.partitions().stream().allMatch(partition -> partition.leader() != null);
+                if (!leadersReady) Thread.sleep(100);
+            }
+            assertTrue(leadersReady, "all 24 partitions must have elected leaders before publishing");
         }
 
         Properties producerProperties = new Properties();
@@ -167,8 +176,11 @@ class KafkaTransactionIntegrationTest {
                 String key = "generator-key-" + (sequence % 10);
                 acknowledgements.add(producer.send(new ProducerRecord<>(topic, key, "payload-" + sequence)));
             }
+            long acknowledgementDeadline = System.nanoTime() + Duration.ofSeconds(60).toNanos();
             for (var acknowledgement : acknowledgements) {
-                var metadata = acknowledgement.get(30, java.util.concurrent.TimeUnit.SECONDS);
+                long remaining = acknowledgementDeadline - System.nanoTime();
+                assertTrue(remaining > 0, "all 10,000 producer ACKs must arrive before the global deadline");
+                var metadata = acknowledgement.get(remaining, java.util.concurrent.TimeUnit.NANOSECONDS);
                 assertTrue(metadata.partition() >= 0 && metadata.partition() < 24);
             }
             producer.flush();
