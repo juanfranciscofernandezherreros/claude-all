@@ -4,9 +4,9 @@ import com.kafkalab.config.LabProperties.Workload;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 public class WorkloadProcessor {
     private volatile int workSink;
     public byte[] apply(String value, Workload workload) {

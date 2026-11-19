@@ -9,13 +9,13 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 /**
  * Applies input-message policy and builds the deterministic business output.
  * Kafka transport, offset handling, serialization and publication stay in the listener/producer adapters.
  */
-@Service
+@Component
 public class InputMessageProcessor {
     private final Validator validator;
     private final LabProperties properties;
