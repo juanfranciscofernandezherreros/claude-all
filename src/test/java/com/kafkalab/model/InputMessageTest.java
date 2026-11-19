@@ -41,14 +41,20 @@ class InputMessageTest {
         assertThrows(JsonProcessingException.class, () -> mapper.readValue("{", InputMessage.class));
     }
 
-    @Test void acceptsMinimumSequenceAndSupportedPayloadByteBoundaries() {
+    @Test void acceptsSequenceOneAndSupportedPayloadByteBoundaries() {
         for (int size : new int[]{1024, 102400}) {
             String data = "x".repeat(size);
             InputMessage message = new InputMessage(1, "run-0", Instant.EPOCH,
-                    "BENCHMARK", new InputMessage.Payload(0, data));
+                    "BENCHMARK", new InputMessage.Payload(1, data));
             assertTrue(validator.validate(message).isEmpty());
             assertEquals(size, message.payload().data().getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
         }
+    }
+
+    @Test void rejectsZeroSequenceAtDtoBoundary() {
+        InputMessage message = new InputMessage(1, "run-0", Instant.EPOCH,
+                "BENCHMARK", new InputMessage.Payload(0, "payload"));
+        assertFalse(validator.validate(message).isEmpty());
     }
 
 }
