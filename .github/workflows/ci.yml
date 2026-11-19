@@ -25,7 +25,9 @@ jobs:
       - name: Check shell syntax
         run: bash -n scripts/*.sh
       - name: Test stress stop policy
-        run: python3 -m unittest discover -s scripts/tests -v
+        run: |
+          python3 -m py_compile scripts/stress_runner.py scripts/stress_policy.py
+          python3 -m unittest discover -s scripts/tests -v
       - name: Validate benchmark scenario matrix
         run: |
           bash scripts/run-full-suite.sh --dry-run > /tmp/benchmark-matrix.json
