@@ -113,7 +113,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: generar UUID por run; construir ID con secuencia decimal estable; checksum bytes UTF-8 en hexadecimal; evitar dependencia del reloj.
   - Artefactos: RunIdProvider, MessageIdFactory, ChecksumService.
   - Prueba: vectores SHA-256 conocidos; misma entrada produce mismo ID/checksum; secuencias no colisionan.
-- [x] B03.3 **DONE — test escrito; pendiente de ejecución y medición.**
+- [x] B03.3 **DONE — pendiente de CI.** Test de vectores SHA-256 golden confirma exactamente 1/10/100 rondas para LIGHT/MEDIUM/HEAVY (`385ef18a`); test previo comprueba determinismo y outputs distintos.
   - Pasos: parsear enum; aplicar exactamente N rondas sobre bytes de resultado anterior; evitar optimización que elimine trabajo; no introducir pausas.
   - Artefactos: WorkloadProcessor y tests.
   - Prueba: outputs deterministas y coste creciente comprobable sin exigir tiempos absolutos.
