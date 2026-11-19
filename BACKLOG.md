@@ -225,7 +225,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B09 — Orquestación y benchmark
 **Depende:** B06, B07, B08.
-- [ ] B09.1 **BLOCKED — warm-up y repeticiones existen; aislamiento/runner integral no terminado.**
+- [x] B09.1 **DONE — pendiente de smoke de tres repeticiones y medición real.** `run-scenario.sh` aplica warm-up configurable (`WARMUP_MESSAGES`, default 10.000), tres repeticiones con runId/offset snapshots separados, validación independiente por run y reportes; CI usa 100 mensajes de warm-up para el smoke (`140b0ed`, `3a51a97`, README `1148002`). Pendiente confirmar que las tres repeticiones y los artefactos se generan correctamente en CI.
   - Pasos: generar runId nuevo por repetición; evitar borrar topics compartidos/volúmenes; filtrar por runId o recrear topics dedicados de forma controlada; ejecutar warm-up no medido; ejecutar 3 repeticiones secuenciales.
   - Artefactos: BenchmarkRunner y manifiesto de ejecución.
   - Prueba: runIds únicos, warm-up excluido y tres resultados independientes.
