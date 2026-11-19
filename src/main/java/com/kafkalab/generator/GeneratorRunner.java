@@ -2,10 +2,8 @@ package com.kafkalab.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafkalab.config.LabProperties;
-import com.kafkalab.model.InputMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,11 +23,12 @@ public class GeneratorRunner implements ApplicationRunner {
     private final ObjectMapper mapper;
     private final LabProperties properties;
     private final MessageIdFactory ids;
+    private final GeneratedMessageFactory messages;
     private final Environment environment;
 
     public GeneratorRunner(KafkaTemplate<String, String> kafka, ObjectMapper mapper,
-                           LabProperties properties, MessageIdFactory ids, Environment environment) {
-        this.kafka = kafka; this.mapper = mapper; this.properties = properties; this.ids = ids; this.environment = environment;
+                           LabProperties properties, MessageIdFactory ids, GeneratedMessageFactory messages, Environment environment) {
+        this.kafka = kafka; this.mapper = mapper; this.properties = properties; this.ids = ids; this.messages = messages; this.environment = environment;
     }
 
     @Override
@@ -60,9 +59,7 @@ public class GeneratorRunner implements ApplicationRunner {
                         long blockEnd = Math.min(count, blockStart + properties.batchSize() - 1);
                         List<String> records = new ArrayList<>((int) (blockEnd - blockStart + 1));
                         for (long sequence = blockStart; sequence <= blockEnd; sequence++) {
-                            InputMessage message = new InputMessage(1, ids.create(runId, sequence), Instant.now(),
-                                    "BENCHMARK", new InputMessage.Payload(sequence, payload));
-                            records.add(serialize(message));
+                            records.add(messages.serialize(runId, sequence, payload));
                         }
                         List<Future<?>> acknowledgements = new ArrayList<>(records.size());
                         if (properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE) {
@@ -119,14 +116,6 @@ public class GeneratorRunner implements ApplicationRunner {
     static String payloadFor(int bytes) {
         if (bytes < 1) throw new IllegalArgumentException("payload size must be positive");
         return "x".repeat(bytes);
-    }
-
-    private String serialize(InputMessage message) {
-        try {
-            return mapper.writeValueAsString(message);
-        } catch (Exception e) {
-            throw new CompletionException("Could not serialize generated message", e);
-        }
     }
 
     static void awaitAcknowledgements(List<Future<?>> acknowledgements, long deadlineNanos) {
