@@ -25,6 +25,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
@@ -100,20 +101,26 @@ public class InputMessageListener {
                                   Consumer<?, ?> consumer, Acknowledgment acknowledgment) {
         boolean isExactlyOnceDeliveryEnabled = properties.deliveryMode() == LabProperties.DeliveryMode.EXACTLY_ONCE;
         if (isExactlyOnceDeliveryEnabled) {
-            kafkaTemplate.executeInTransaction(operations -> {
-                try {
-                    operations.send(topic, key, value).get(30, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new KafkaPublishException("Interrupted during transactional Kafka publish for topic " + topic, e);
-                } catch (ExecutionException | TimeoutException e) {
-                    throw new KafkaPublishException("Transactional Kafka publish failed for topic " + topic, e);
-                }
-                operations.sendOffsetsToTransaction(
-                        Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
-                        consumer.groupMetadata());
-                return true;
-            });
+            try {
+                kafkaTemplate.executeInTransaction(operations -> {
+                    try {
+                        operations.send(topic, key, value).get(30, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new KafkaPublishException("Interrupted during transactional Kafka publish for topic " + topic, e);
+                    } catch (ExecutionException | TimeoutException e) {
+                        throw new KafkaPublishException("Transactional Kafka publish failed for topic " + topic, e);
+                    }
+                    operations.sendOffsetsToTransaction(
+                            Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
+                            consumer.groupMetadata());
+                    return true;
+                });
+            } catch (KafkaPublishException publishFailure) {
+                throw publishFailure;
+            } catch (KafkaException kafkaFailure) {
+                throw new KafkaPublishException("Transactional Kafka operation failed for topic " + topic, kafkaFailure);
+            }
         } else {
             publisher.publish(topic, key, value);
             acknowledgment.acknowledge();
