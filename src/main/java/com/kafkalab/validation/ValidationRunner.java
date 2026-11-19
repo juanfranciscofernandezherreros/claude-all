@@ -105,7 +105,9 @@ public class ValidationRunner implements ApplicationRunner {
                             DltMessage dead = mapper.readValue(record.value(), DltMessage.class);
                             InputMessage original = mapper.readValue(dead.originalPayload(), InputMessage.class);
                             if (original.messageId().startsWith(runId + "-")) dlt++;
-                        } catch (Exception ignored) { }
+                        } catch (Exception ignored) {
+                            if (record.value().contains(runId + "-")) dlt++;
+                        }
                     }
                 }
             }
@@ -117,7 +119,7 @@ public class ValidationRunner implements ApplicationRunner {
         long missing = Math.max(0, expected - valid);
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("runId", runId); report.put("timestamp", Instant.now().toString());
-        report.put("expected", expected); report.put("valid", valid); report.put("failed", 0);
+        report.put("expected", expected); report.put("valid", valid); report.put("failed", dlt);
         report.put("dlt", dlt); report.put("missing", missing); report.put("duplicate", duplicates);
         report.put("unexpected", unexpected); report.put("invalid", invalid);
         Collections.sort(latencyNanos);
