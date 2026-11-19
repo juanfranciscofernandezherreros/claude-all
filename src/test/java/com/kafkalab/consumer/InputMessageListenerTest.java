@@ -19,13 +19,17 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.validation.Validation;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 
@@ -112,6 +116,49 @@ class InputMessageListenerTest {
         assertEquals(2, batch.getValue().size());
         verify(acknowledgment, times(1)).acknowledge();
         assertEquals(2.0, registry.get("output_published_total").counter().count());
+    }
+
+    @Test
+    void exactlyOncePublishesBatchAndOffsetsWithinOneTransactionWithoutManualAck() throws Exception {
+        var factory = Validation.buildDefaultValidatorFactory();
+        try {
+            LabProperties properties = new LabProperties(100, 24, 1, 500, 65536, 4, 1024,
+                    LabProperties.DeliveryMode.EXACTLY_ONCE, LabProperties.Workload.LIGHT,
+                    "input-topic", "output-topic", "dlt-topic");
+            InputMessageProcessor processor = new InputMessageProcessor(factory.getValidator(), properties,
+                    new WorkloadProcessor(), new ChecksumService());
+            KafkaTemplate<String, String> transactionalTemplate = mock(KafkaTemplate.class);
+            KafkaOperations<String, String> operations = mock(KafkaOperations.class);
+            ConsumerGroupMetadata groupMetadata = new ConsumerGroupMetadata("kafka-lab");
+            when(consumer.groupMetadata()).thenReturn(groupMetadata);
+            doReturn(CompletableFuture.completedFuture(null))
+                    .when(operations).send(any(ProducerRecord.class));
+            doAnswer(invocation -> {
+                KafkaOperations.OperationsCallback<String, String, Boolean> callback =
+                        invocation.getArgument(0);
+                return callback.doInOperations(operations);
+            }).when(transactionalTemplate).executeInTransaction(any());
+
+            InputMessageListener transactionalListener = new InputMessageListener(mapper, properties, processor,
+                    publisher, transactionalTemplate, metrics, registry);
+            List<ConsumerRecord<String, String>> records = List.of(
+                    inputRecord("run-eos-1", 1, 0),
+                    inputRecord("run-eos-2", 2, 1));
+
+            transactionalListener.onMessages(records, acknowledgment, consumer);
+
+            verify(transactionalTemplate, times(1)).executeInTransaction(any());
+            verify(operations, times(2)).send(any(ProducerRecord.class));
+            verify(operations).sendOffsetsToTransaction(
+                    argThat(offsets -> offsets.size() == 1
+                            && offsets.get(new TopicPartition("input-topic", 0)).offset() == 2),
+                    eq(groupMetadata));
+            verify(acknowledgment, never()).acknowledge();
+            verify(publisher, never()).publishBatch(anyList());
+            assertEquals(2.0, registry.get("output_published_total").counter().count());
+        } finally {
+            factory.close();
+        }
     }
 
     @Test
