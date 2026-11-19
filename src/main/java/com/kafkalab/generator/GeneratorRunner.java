@@ -107,7 +107,7 @@ public class GeneratorRunner implements ApplicationRunner {
         }
     }
 
-    private static void awaitAcknowledgements(List<Future<?>> acknowledgements, long deadlineNanos) {
+    static void awaitAcknowledgements(List<Future<?>> acknowledgements, long deadlineNanos) {
         for (Future<?> acknowledgement : acknowledgements) {
             try {
                 acknowledgement.get(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS);
