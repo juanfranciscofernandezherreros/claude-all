@@ -66,7 +66,10 @@ public class InputMessageListener {
             return;
         }
         Set<ConstraintViolation<InputMessage>> violations = validator.validate(input);
-        if (!violations.isEmpty() || input.schemaVersion() != 1 || !"BENCHMARK".equals(input.eventType())) {
+        if (!violations.isEmpty() || input.schemaVersion() != 1 || !"BENCHMARK".equals(input.eventType())
+                || input.payload().sequence() < 1
+                || !input.messageId().endsWith("-" + input.payload().sequence())
+                || input.payload().data().getBytes(java.nio.charset.StandardCharsets.UTF_8).length != properties.payloadBytes()) {
             String reason = violations.stream().map(v -> v.getPropertyPath() + " " + v.getMessage()).collect(Collectors.joining("; "));
             if (reason.isBlank()) reason = "Unsupported schemaVersion or eventType";
             publishDlt(raw, new IllegalArgumentException(reason), record, consumer, acknowledgment);
