@@ -169,8 +169,6 @@ class KafkaTransactionIntegrationTest {
             }
             for (var acknowledgement : acknowledgements) {
                 var metadata = acknowledgement.get(30, java.util.concurrent.TimeUnit.SECONDS);
-                String key = "generator-key-" + (Integer.parseInt(metadata.topic()) % 10);
-                // Partition consistency is asserted below using the key recorded with each future.
                 assertTrue(metadata.partition() >= 0 && metadata.partition() < 24);
             }
             producer.flush();
