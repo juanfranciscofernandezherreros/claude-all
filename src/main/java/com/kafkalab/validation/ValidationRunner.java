@@ -44,10 +44,12 @@ public class ValidationRunner implements ApplicationRunner {
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
         BitSet sequences = new BitSet(Math.toIntExact(Math.min(expected + 1, Integer.MAX_VALUE)));
+        String[] expectedChecksums = new String[Math.toIntExact(expected + 1)];
+        String[] actualChecksums = new String[Math.toIntExact(expected + 1)];
         long duplicates = 0, unexpected = 0, invalid = 0, dlt = 0;
         List<TopicPartition> partitions = new ArrayList<>();
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config)) {
-            for (String topic : List.of(properties.outputTopic(), properties.dltTopic())) {
+            for (String topic : List.of(properties.inputTopic(), properties.outputTopic(), properties.dltTopic())) {
                 for (PartitionInfo p : consumer.partitionsFor(topic, Duration.ofSeconds(20))) {
                     partitions.add(new TopicPartition(topic, p.partition()));
                 }
@@ -58,14 +60,22 @@ public class ValidationRunner implements ApplicationRunner {
             long deadline = System.nanoTime() + Duration.ofSeconds(timeoutSeconds).toNanos();
             while (!atEnd(consumer, ends) && System.nanoTime() < deadline) {
                 for (ConsumerRecord<String, String> record : consumer.poll(Duration.ofMillis(500))) {
-                    if (record.topic().equals(properties.outputTopic())) {
+                    if (record.topic().equals(properties.inputTopic())) {
+                        try {
+                            InputMessage input = mapper.readValue(record.value(), InputMessage.class);
+                            if (input.messageId().startsWith(runId + "-")) {
+                                long sequence = input.payload().sequence();
+                                if (sequence >= 1 && sequence <= expected) expectedChecksums[(int) sequence] = checksums.sha256(input.payload().data());
+                            }
+                        } catch (Exception e) { invalid++; }
+                    } else if (record.topic().equals(properties.outputTopic())) {
                         try {
                             OutputMessage output = mapper.readValue(record.value(), OutputMessage.class);
                             if (!output.messageId().startsWith(runId + "-")) continue;
                             long sequence = output.result().sequence();
                             if (output.schemaVersion() != 1 || !"OK".equals(output.status())
                                     || !output.messageId().equals(runId + "-" + sequence)
-                                    || !checksums.sha256(extractExpectedPayload(record, output)).equals(output.result().checksum())) {
+                                    || !output.result().checksum().matches("[0-9a-f]{64}")) {
                                 invalid++;
                             } else if (sequence < 1 || sequence > expected) {
                                 unexpected++;
@@ -73,6 +83,7 @@ public class ValidationRunner implements ApplicationRunner {
                                 duplicates++;
                             } else {
                                 sequences.set((int) sequence);
+                                actualChecksums[(int) sequence] = output.result().checksum();
                             }
                         } catch (Exception e) { invalid++; }
                     } else {
@@ -84,6 +95,9 @@ public class ValidationRunner implements ApplicationRunner {
                     }
                 }
             }
+        }
+        for (int sequence = sequences.nextSetBit(1); sequence >= 0; sequence = sequences.nextSetBit(sequence + 1)) {
+            if (!Objects.equals(expectedChecksums[sequence], actualChecksums[sequence])) invalid++;
         }
         long valid = sequences.cardinality();
         long missing = Math.max(0, expected - valid);
@@ -107,8 +121,5 @@ public class ValidationRunner implements ApplicationRunner {
     private String required(ApplicationArguments args, String name) {
         if (!args.containsOption(name) || args.getOptionValues(name).isEmpty()) throw new IllegalArgumentException("--" + name + " is required");
         return args.getOptionValues(name).get(0);
-    }
-    private String extractExpectedPayload(ConsumerRecord<String, String> record, OutputMessage output) {
-        return output.result().checksum();
     }
 }
