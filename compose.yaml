@@ -50,6 +50,8 @@ services:
       LINGER_MS: ${LINGER_MS:-5}
     ports:
       - "8080:8080"
+    volumes:
+      - ./benchmark-results:/app/benchmark-results
     depends_on:
       kafka:
         condition: service_healthy
