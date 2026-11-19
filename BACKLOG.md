@@ -41,7 +41,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: comprobar rama/estado Git; listar archivos; comprobar java -version, docker version/info, docker compose version, git --version y claude --version; identificar SO/arquitectura/CPU/RAM; registrar faltantes.
   - Artefactos: inventario breve en BACKLOG (evidencia), sin volcar logs.
   - Prueba: inventario remoto completado mediante GitHub API; comprobación local de Java/Docker/CPU/RAM pendiente. No marcar DONE hasta completar la inspección local.
-- [ ] B00.2 Verificar coherencia PRD: messageId string `runId-sequence`; tiempos UTC en mensajes y monotónicos en medición; diferencia entre procesamiento y end-to-end.
+- [x] B00.2 **DONE.** Revisados esquemas, IDs, modos de entrega, reintentos, fórmulas, suites y variables. Corregida ambigüedad de batching: `BATCH_SIZE=500` son registros por poll/bloque lógico; `PRODUCER_BATCH_BYTES=65536` son bytes para Kafka producer. Evidencia: commit PRD `f8d9082`.
   - Pasos: contrastar esquemas entrada/salida/DLT; comprobar reglas EOS/at-least-once; confirmar fórmulas, escenarios y variables; corregir contradicciones en PRD antes del código.
   - Artefactos: PRD corregido solo si existe contradicción real.
   - Prueba: revisar que backlog y PRD usan mismos nombres, valores y criterios.
@@ -62,7 +62,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Artefactos: mvnw, mvnw.cmd, .mvn/wrapper/*, clase de arranque.
   - Prueba: ./mvnw -version, mvnw.cmd -version y clean package.
 - [ ] B01.3 Crear application.yml y binding tipado de variables del PRD; defaults, validación de rangos y fallo temprano con mensaje claro.
-  - Pasos: agrupar propiedades kafka/app/benchmark/metrics; mapear cada variable PRD; validar enum/rango/positividad; no registrar secretos; documentar defaults.
+  - Pasos: agrupar propiedades kafka/app/benchmark/metrics; mapear cada variable PRD (incluidos BATCH_SIZE y PRODUCER_BATCH_BYTES); validar enum/rango/positividad; no registrar secretos; documentar defaults.
   - Artefactos: application.yml, clases @ConfigurationProperties y tests.
   - Prueba: contexto arranca con defaults; valores inválidos impiden arrancar con mensaje accionable.
 - [ ] B01.4 Crear .env.example sin secretos y documentación de todas las variables.
@@ -118,11 +118,11 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 ### B04 — Productor y generador
 **Depende:** B02, B03.
 - [ ] B04.1 Configurar producer con acks=all, idempotencia, retries y batch/linger/compression configurables.
-  - Pasos: definir bootstrap según entorno; key=messageId; serializer JSON; acks all; enable.idempotence true; retries compatibles; batch.size/linger/compression externos.
+  - Pasos: definir bootstrap según entorno; key=messageId; serializer JSON; acks all; enable.idempotence true; retries compatibles; batch.size=PRODUCER_BATCH_BYTES; linger/compression externos.
   - Artefactos: KafkaProducerConfig y propiedades.
   - Prueba: inspeccionar configuración efectiva y publicar/leer mensaje de prueba.
 - [ ] B04.2 Implementar generador CLI que publique N mensajes únicos; threads configurables, payload exacto, progreso cada 10.000, runId y métricas de publicación.
-  - Pasos: validar argumentos; crear runId; generar secuencias 1..N sin duplicar; construir payload con bytes exactos; distribuir envío entre threads; usar callbacks/acks.
+  - Pasos: validar argumentos; crear runId; generar secuencias 1..N sin duplicar; construir payload con bytes exactos; agrupar envío en bloques de BATCH_SIZE registros; distribuir envío entre threads; usar callbacks/acks.
   - Artefactos: generator CLI, payload factory y documentación de flags.
   - Prueba: generar 10.000; contar IDs distintos y comprobar payload bytes y secuencia continua.
 - [ ] B04.3 Esperar confirmación de todos los envíos; fallo de envío produce exit code no cero y registro.
@@ -138,7 +138,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 ### B05 — Consumer, transformación y errores
 **Depende:** B02, B03, B04.
 - [ ] B05.1 Implementar consumer con group kafka-lab, concurrencia y batch/poll configurables.
-  - Pasos: suscribir input-topic; group.id fijo; concurrency validada; max.poll.records ligado a batch; desactivar auto-commit; configurar deserialización segura.
+  - Pasos: suscribir input-topic; group.id fijo; concurrency validada; max.poll.records=BATCH_SIZE; desactivar auto-commit; configurar deserialización segura.
   - Artefactos: KafkaConsumerConfig y listener.
   - Prueba: enviar lote y confirmar recepción; reiniciar y comprobar offsets gestionados por aplicación.
 - [ ] B05.2 Procesar, transformar y publicar una salida por entrada válida; preservar messageId y sequence.
