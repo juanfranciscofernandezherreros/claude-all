@@ -44,11 +44,13 @@ for repetition in 1 2 3; do
     --run-id="$run_id" --messages="$messages" --timeout-seconds=1800 \
     | tee "$results/$run_id/validation-console.json"
 docker_memory_usage=$(docker stats --no-stream --format '{{.MemUsage}}' kafka-lab-app 2>/dev/null || true)
-prometheus_metrics=$(curl -fsS http://localhost:8080/actuator/prometheus 2>/dev/null || true)
+prometheus_metrics_file="$results/$run_id/prometheus-metrics.txt"
+curl -fsS http://localhost:8080/actuator/prometheus > "$prometheus_metrics_file" 2>/dev/null || :
 consumer_lag=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group kafka-lab 2>/dev/null | awk 'NR>1 && $6 ~ /^[0-9]+$/ {sum += $6; found=1} END {if (found) print sum; else print ""}' || true)
-  "$python_bin" - "$results/$run_id" "$results/results.csv" "$name" "$concurrency" "$messages" "$payload" "$workload" "$delivery" "$java_version" "$docker_version" "$docker_memory_usage" "$prometheus_metrics" "$consumer_lag" <<'PY'
+  "$python_bin" - "$results/$run_id" "$results/results.csv" "$name" "$concurrency" "$messages" "$payload" "$workload" "$delivery" "$java_version" "$docker_version" "$docker_memory_usage" "$prometheus_metrics_file" "$consumer_lag" <<'PY'
 import json,sys,platform,os,datetime,re
-folder,csv_path,name,concurrency,messages,payload,workload,delivery,java_version,docker_version,docker_memory_usage,prometheus_metrics,consumer_lag=sys.argv[1:]
+folder,csv_path,name,concurrency,messages,payload,workload,delivery,java_version,docker_version,docker_memory_usage,prometheus_metrics_file,consumer_lag=sys.argv[1:]
+prometheus_metrics=open(prometheus_metrics_file,encoding="utf-8").read() if os.path.isfile(prometheus_metrics_file) else ""
 execution=[x for x in open(folder+"/execution.log",encoding="utf-8") if x.startswith('{"runId"')][-1]
 generated=json.loads(execution)
 validation=json.load(open(folder+"/validation.json",encoding="utf-8"))
