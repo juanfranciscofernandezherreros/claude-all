@@ -205,7 +205,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B08 — Validador independiente
 **Depende:** B04, B05.
-- [x] B08.1 **DONE — validador independiente y snapshot de offsets implementados; corregido import de `PartitionInfo` detectado por CI; pendiente e2e.** Evidencia: commit `78cdcdb`; nueva CI pendiente.
+- [x] B08.1 **DONE — pendiente de e2e completo.** Validador independiente usa snapshot de offsets y ahora espera a que el consumer group `kafka-lab` confirme los offsets de entrada antes de capturar los endOffsets finales de output/DLT (`2a300e9`); evita terminar mientras el listener aún procesa mensajes. Smoke de 100 mensajes previo pasó; nueva CI verificará esta sincronización.
   - Pasos: leer desde beginning para runId; determinar límites/end offsets; recorrer particiones hasta capturar todos los registros del run; excluir transacciones abortadas en EOS.
   - Artefactos: ValidationRunner y Kafka reader independiente.
   - Prueba: validador termina cuando alcanza los offsets objetivo y no depende de contadores internos del consumer.
@@ -213,7 +213,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: obtener rango esperado 1..N; almacenar IDs vistos en estructura acotada/disco; contar ocurrencias; verificar schema/checksum/sequence; agregar DLT y fallidos.
   - Artefactos: ValidationReport y almacenamiento temporal limpiable.
   - Prueba: dataset sintético detecta missing, duplicate, unexpected, corrupto y DLT por separado.
-- [x] B08.3 **DONE — validation.json y fallo de proceso implementados; pendiente ejecución.**
+- [x] B08.3 **DONE — pendiente de anomalías.** `validation.json` incluye contadores, latencia y estado; ahora registra `processingComplete` y no declara PASS si vence el timeout antes de que el consumer group confirme el rango de entrada (`2a300e9`). Pendientes fixtures para cada anomalía.
   - Pasos: incluir expected/valid/failed/DLT/missing/duplicate/unexpected/invalid; incluir runId y timestamp; definir exit 0 solo si criterios PRD pasan.
   - Artefactos: validation.json y CLI validate.
   - Prueba: caso íntegro exit 0; cada anomalía exit no cero.
