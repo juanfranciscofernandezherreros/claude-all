@@ -237,11 +237,11 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
   - Prueba: dry-run imprime escenarios exactos; tests confirman número/valores de casos.
-- [x] B09.4 **DONE — pendiente de probar escenarios secundarios completos.** CI `44527562034`: tres repeticiones, CSV inicializado, y seis artefactos por run (`offsets.json`, `execution.log`, `validation.json`, `summary.json`, `environment.json`, `report.md`) comprobados. Se añade `prometheus-metrics.txt` como séptimo artefacto. Fixes: permisos host/UID 10001 (`c47c93f`, `dd59680`), readiness de app (`832afde`), `sed` en vez de `head` por SIGPIPE (`ca1eae7`), métricas en archivo para evitar ARG_MAX (`da34af4`).
+- [x] B09.4 **DONE — pendiente de probar la matriz secundaria completa.** CI `44528276019`: tres repeticiones, CSV correcto y siete artefactos por run (`offsets.json`, `execution.log`, `validation.json`, `summary.json`, `environment.json`, `report.md`, `prometheus-metrics.txt`) comprobados. Los tres reportes `processingComplete=true`, `status=PASS`. Fixes: permisos host/UID 10001 (`c47c93f`, `dd59680`), readiness (`832afde`), `sed` en vez de `head` por SIGPIPE (`ca1eae7`), métricas a archivo para ARG_MAX (`da34af4`), warm-up configurable y logs (`140b0ed`, `b4fca54`).
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
-- [x] B09.5 **DONE — pendiente de validar presencia de todos los valores métricos.** `run-scenario.sh` recoge Docker memory, heap JVM, GC count/sum y Kafka consumer lag por repetición; Prometheus se guarda en `prometheus-metrics.txt` y se etiqueta GC acumulado/memoria snapshot (`35f3ebd`, `f8035e1`, `da34af4`, `08a4447`). CI `44527562034` completó las tres repeticiones y creó los artefactos; CI nueva `98627ce` exige que memory/heap/GC/lag no sean null.
+- [x] B09.5 **DONE.** CI `44528276019` comprobó valores no nulos en cada una de las tres repeticiones para `memoryBytes` (Docker stats), `heapUsedBytes`, `gcPauseCount`, `gcPauseSeconds` y `kafkaConsumerLag`. `environment.json` conserva la muestra final (no pico) y `prometheus-metrics.txt` el scrape bruto; GC es acumulado desde el arranque. Implementación `35f3ebd`, `f8035e1`, `da34af4`, `08a4447`; assertion CI `98627ce`.
   - Pasos: consultar métricas JVM/Prometheus y Docker stats; muestrear durante ejecución; registrar promedio/máximo; si no hay permiso, guardar unavailable + motivo.
   - Artefactos: environment.json y summary.json.
   - Prueba: campos presentes con valor o motivo explícito; no usar cero para dato desconocido.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente benchmark 1M y matriz completa.** CI `44527562034`: `clean verify` BUILD SUCCESS (10 tests, 0 fallos, 0 omitidos), build Kafka 3.9.1 + app, health UP, warm-up 10k, tres repeticiones de 100 mensajes con `processingComplete=true`, `status=PASS`, seis artefactos por run y `docker compose down -v`. CI actualizada en `98627ce` para exigir métricas runtime no nulas.
+- [x] B10.4 **DONE — pendiente benchmark 1M y matriz completa.** CI `44528276019`: `clean verify` BUILD SUCCESS (10 tests, 0 fallos, 0 omitidos), Docker Kafka 3.9.1 + app construidos, health UP, warm-up CI 100, tres repeticiones de 100 mensajes (`processingComplete=true`, `status=PASS`), siete artefactos y cinco métricas runtime no nulas; stack cerrado con `docker compose down -v`. Falta ejecutar benchmark 1M/matriz completa en el hardware objetivo.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
