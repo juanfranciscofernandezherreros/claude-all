@@ -130,7 +130,7 @@ spring:
       concurrency: ${CONCURRENCY:1}
       poll-timeout: 1000
       missing-topics-fatal: true
-      type: single
+      type: batch
 
     # Administración de topics declarados como NewTopic beans.
     admin:
