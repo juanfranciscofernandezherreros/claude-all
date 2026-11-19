@@ -265,7 +265,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: comprobar comandos; localizar Docker Desktop; iniciar si detenido; esperar máximo 120s; verificar PRD/BACKLOG; ejecutar Claude con instrucciones mínimas; preservar exit code y pausar solo al final.
   - Artefactos: RUN-KAFKA-LAB.bat.
   - Prueba: revisar rutas con espacios, Docker detenido/activo/no instalado y Claude ausente; no ejecutar permisos peligrosos sin advertencia visible.
-- [x] B10.3 **DONE — README documenta instalación, quick start, comandos Windows/Linux, configuración, resultados, puertos, métricas y troubleshooting; pendiente validación desde clon limpio.** Evidencia: README commit `c0666d0`; prueba de clon limpio pendiente.
+- [x] B10.3 **DONE — pendiente validación desde clon limpio.** README cubre instalación, quick start, comandos Windows/Linux, variables Compose/Spring, parámetros de runner/benchmark/stress, resultados, puertos, métricas y troubleshooting (`c0666d0`, `5ee379cb`). Pendiente revisar desde un clon limpio en Windows y Linux.
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
