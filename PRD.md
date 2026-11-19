@@ -2,7 +2,7 @@
 
 ## 1. Objetivo y reglas
 Construir, ejecutar y medir un pipeline Java/Kafka local: publicar 1.000.000 entradas, procesarlas y producir exactamente una salida lógica por entrada válida. Entregar código funcional, pruebas, benchmark real y evidencias. No entregar solo un plan.
-Decisiones cerradas: Java 21; Spring Boot 3.4.5; Spring Kafka gestionado por Spring Boot; Maven Wrapper 3.9.9; JUnit 5; Testcontainers; Apache Kafka 3.9.0 en Docker; KRaft sin ZooKeeper; JSON; Micrometer + Prometheus + Grafana. Fijar todas las versiones e imágenes, nunca usar latest. Si una versión fijada no está disponible, no sustituir silenciosamente: documentar bloqueo.
+Decisiones cerradas: Java 21; Spring Boot 3.4.5; Spring Kafka gestionado por Spring Boot; Maven Wrapper 3.9.9; JUnit 5; Testcontainers; Apache Kafka 3.9.1 en Docker (3.9.0 se descarta por KAFKA-18281: validación incorrecta de listeners KRaft con 0.0.0.0); KRaft sin ZooKeeper; JSON; Micrometer + Prometheus + Grafana. Fijar todas las versiones e imágenes, nunca usar latest. Si una versión fijada no está disponible, no sustituir silenciosamente: documentar bloqueo.
 No preguntar ni solicitar aprobaciones rutinarias. No inventar resultados. No modificar archivos ajenos al proyecto.
 
 ## 2. Arquitectura fija
