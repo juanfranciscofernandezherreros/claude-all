@@ -45,7 +45,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B00 — Inspección y contrato
 **Depende:** nada. **Salida:** estructura existente entendida y decisiones consistentes.
-- [ ] B00.1 **BLOCKED — inspección parcial remota.** GitHub confirma repositorio `claude-all`, rama `main`, permisos de lectura/escritura y seis archivos de documentación/launcher; no existe código fuente ni árbol Maven todavía. No hay acceso a la máquina local desde la sesión GitHub, por lo que Java, Docker Desktop, SO, CPU y RAM no se pueden verificar aquí. Reanudar esta subtarea desde el equipo local antes de ejecutar Docker/benchmarks.
+- [ ] B00.1 **BLOCKED — inventario del hardware local.** El repositorio ya contiene Maven, Java, Docker Compose, tests y scripts; GitHub Actions valida build y runtime en Ubuntu. Lo único no verificable desde GitHub es el equipo objetivo del usuario: Windows/macOS/Linux, CPU, RAM, versión de Java/Docker Desktop y almacenamiento. Registrar esos datos cuando se ejecute desde el host objetivo; no confundirlos con el runner de CI.
   - Pasos: comprobar rama/estado Git; listar archivos; comprobar java -version, docker version/info, docker compose version, git --version y claude --version; identificar SO/arquitectura/CPU/RAM; registrar faltantes.
   - Artefactos: inventario breve en BACKLOG (evidencia), sin volcar logs.
   - Prueba: inventario remoto completado mediante GitHub API; comprobación local de Java/Docker/CPU/RAM pendiente. No marcar DONE hasta completar la inspección local.
