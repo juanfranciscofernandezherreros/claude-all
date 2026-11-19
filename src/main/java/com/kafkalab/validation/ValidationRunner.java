@@ -242,6 +242,8 @@ public class ValidationRunner implements ApplicationRunner {
         List<String> optionValues = args.getOptionValues(optionName);
         boolean isOptionValueMissing = optionValues == null || optionValues.isEmpty();
         if (isOptionValueMissing) throw new InvalidCommandLineException("--" + optionName + " requires a value");
+        boolean isOptionValueBlank = optionValues.get(0).isBlank();
+        if (isOptionValueBlank) throw new InvalidCommandLineException("--" + optionName + " must not be blank");
         return optionValues.get(0);
     }
 }
