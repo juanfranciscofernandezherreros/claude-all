@@ -97,7 +97,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: script/init container espera broker; crea topics con nombres exactos; si ya existen, valida configuración y no falla; definir retención para suite.
   - Artefactos: init script/servicio y definición de topics.
   - Prueba: dos arranques seguidos sin error; describe topics confirma particiones/replication factor.
-- [x] B02.5 **DONE — provisioning creado; pendiente validar Prometheus/Grafana.**
+- [x] B02.5 **DONE.** CI `44537286874` levantó Prometheus y Grafana reales, verificó `/-/ready`, `/api/health`, datasource Prometheus (`http://prometheus:9090`) y dashboard provisionado `kafka-performance-lab`.
   - Pasos: crear prometheus.yml scrape app; datasource provisioning; dashboard provisioning; credenciales locales no sensibles y documentadas.
   - Artefactos: monitoring/prometheus/* y monitoring/grafana/provisioning/*.
   - Prueba: targets Prometheus UP; dashboard visible tras arrancar Compose.
@@ -197,7 +197,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: habilitar health/info/prometheus; restringir endpoints expuestos; revisar tags para cardinalidad; nunca incluir messageId/runId como labels.
   - Artefactos: application.yml y métricas.
   - Prueba: GET /actuator/health UP y /actuator/prometheus contiene series esperadas.
-- [x] B07.3 **DONE — pendiente de CI con servicios reales.** Datasource Prometheus y dashboard `Kafka Performance Lab` provisionados desde YAML/JSON. CI ahora levanta Prometheus+Grafana, espera readiness, consulta `/api/datasources` y `/api/search`, y exige datasource `http://prometheus:9090` + dashboard UID `kafka-performance-lab` (`98caca27`).
+- [x] B07.3 **DONE.** CI `44537286874` validó readiness de Prometheus/Grafana, datasource API y búsqueda del dashboard `Kafka Performance Lab` por UID `kafka-performance-lab`; provisión YAML/JSON verificada en servicios reales.
   - Pasos: definir scrape interval; datasource Prometheus; paneles throughput, p50/p95/p99, error, DLT, lag, heap y GC; variables básicas de filtro.
   - Artefactos: YAML provisioning y JSON dashboard.
   - Prueba: dashboard se carga y muestra series tras ejecutar un smoke test.
