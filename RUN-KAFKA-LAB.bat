@@ -8,6 +8,7 @@ if not exist "compose.yaml" (
   exit /b 1
 )
 where docker >nul 2>&1 || (echo ERROR: Install Docker Desktop with Docker Compose v2.& pause& exit /b 1)
+docker compose version >nul 2>&1 || (echo ERROR: Docker Compose v2 is required.& pause& exit /b 1)
 docker info >nul 2>&1
 if errorlevel 1 (
   if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" (
@@ -29,7 +30,7 @@ if errorlevel 1 (
 )
 :docker_ready
 if not exist "benchmark-results" mkdir "benchmark-results"
-icacls "benchmark-results" /grant "*S-1-1-0:(OI)(CI)M" /T >nul 2>&1
+icacls "benchmark-results" /grant "%USERDOMAIN%\%USERNAME%:(OI)(CI)M" /T >nul 2>&1
 echo Starting Kafka, the application, Prometheus and Grafana...
 docker compose up -d --build
 if errorlevel 1 goto failed
