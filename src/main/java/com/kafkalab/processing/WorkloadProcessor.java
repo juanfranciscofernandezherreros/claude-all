@@ -1,6 +1,7 @@
 package com.kafkalab.processing;
 
 import com.kafkalab.config.LabProperties.Workload;
+import com.kafkalab.exception.ChecksumUnavailableException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -18,7 +19,7 @@ public class WorkloadProcessor {
             workSink = current[0] & 0xff;
             return current;
         } catch (NoSuchAlgorithmException impossible) {
-            throw new IllegalStateException("SHA-256 is not available", impossible);
+            throw new ChecksumUnavailableException("SHA-256 is not available", impossible);
         }
     }
 }
