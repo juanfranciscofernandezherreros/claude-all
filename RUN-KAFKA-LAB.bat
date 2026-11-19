@@ -28,6 +28,8 @@ if errorlevel 1 (
   exit /b 1
 )
 :docker_ready
+if not exist "benchmark-results" mkdir "benchmark-results"
+icacls "benchmark-results" /grant "*S-1-1-0:(OI)(CI)M" /T >nul 2>&1
 echo Starting Kafka, the application, Prometheus and Grafana...
 docker compose up -d --build
 if errorlevel 1 goto failed
