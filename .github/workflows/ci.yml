@@ -24,6 +24,8 @@ jobs:
         run: chmod +x mvnw
       - name: Check shell syntax
         run: bash -n scripts/*.sh
+      - name: Test stress stop policy
+        run: python3 -m unittest discover -s scripts/tests -v
       - name: Validate benchmark scenario matrix
         run: |
           bash scripts/run-full-suite.sh --dry-run > /tmp/benchmark-matrix.json
@@ -47,12 +49,17 @@ jobs:
           python3 - <<'PY'
           import json
           stress = json.load(open("/tmp/stress-matrix.json", encoding="utf-8"))
-          assert stress == {
-              "messages": 5_000_000, "concurrency": 20, "payloadBytes": 102400,
-              "workload": "HEAVY", "deliveryMode": "EXACTLY_ONCE",
-              "warmupMessages": 10_000, "repetitions": 3
-          }
-          print("Stress runner defaults validated.")
+          assert stress["maxMessages"] == 5_000_000
+          assert stress["stepMessages"] == 100_000
+          assert stress["concurrency"] == 20
+          assert stress["payloadBytes"] == 102400
+          assert stress["workload"] == "HEAVY"
+          assert stress["deliveryMode"] == "EXACTLY_ONCE"
+          assert stress["warmupMessages"] == 10_000
+          assert stress["repetitionsPerStep"] == 1
+          assert stress["stopConditions"]["memoryPercent"] == ">85"
+          assert stress["stopConditions"]["consumerLag"] == "increasing for 3 consecutive steps"
+          print("Incremental stress defaults and stop conditions validated.")
           PY
       - name: Validate Docker Compose
         run: docker compose config --quiet
