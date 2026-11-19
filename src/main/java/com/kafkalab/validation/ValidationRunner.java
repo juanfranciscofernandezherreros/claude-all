@@ -29,9 +29,12 @@ public class ValidationRunner implements ApplicationRunner {
     private final LabProperties properties;
     private final ObjectMapper mapper;
     private final ChecksumService checksums;
+    private final ValidationReportWriter reportWriter;
 
-    public ValidationRunner(Environment environment, LabProperties properties, ObjectMapper mapper, ChecksumService checksums) {
-        this.environment = environment; this.properties = properties; this.mapper = mapper; this.checksums = checksums;
+    public ValidationRunner(Environment environment, LabProperties properties, ObjectMapper mapper,
+                            ChecksumService checksums, ValidationReportWriter reportWriter) {
+        this.environment = environment; this.properties = properties; this.mapper = mapper;
+        this.checksums = checksums; this.reportWriter = reportWriter;
     }
 
     @Override public void run(ApplicationArguments args) throws Exception {
@@ -190,8 +193,7 @@ public class ValidationRunner implements ApplicationRunner {
         boolean passedValidation = hasCompleteProcessing && hasNoMissingOutputs && hasNoDuplicateOutputs
                 && hasNoUnexpectedOutputs && hasNoInvalidRecords && hasNoDeadLetterRecords;
         report.put("status", passedValidation ? "PASS" : "FAIL");
-        mapper.writerWithDefaultPrettyPrinter().writeValue(reportPath.toFile(), report);
-        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report));
+        reportWriter.write(reportPath, report);
         if (!"PASS".equals(report.get("status"))) throw new ValidationFailedException("Independent validation failed; see " + reportPath);
     }
 
