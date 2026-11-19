@@ -47,6 +47,7 @@ public class ValidationRunner implements ApplicationRunner {
         String[] expectedChecksums = new String[Math.toIntExact(expected + 1)];
         String[] actualChecksums = new String[Math.toIntExact(expected + 1)];
         long duplicates = 0, unexpected = 0, invalid = 0, dlt = 0;
+        List<Long> latencyNanos = new ArrayList<>();
         List<TopicPartition> partitions = new ArrayList<>();
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config)) {
             for (String topic : List.of(properties.inputTopic(), properties.outputTopic(), properties.dltTopic())) {
@@ -84,6 +85,7 @@ public class ValidationRunner implements ApplicationRunner {
                             } else {
                                 sequences.set((int) sequence);
                                 actualChecksums[(int) sequence] = output.result().checksum();
+                                latencyNanos.add(Duration.between(output.createdAt(), output.processedAt()).toNanos());
                             }
                         } catch (Exception e) { invalid++; }
                     } else {
@@ -106,6 +108,18 @@ public class ValidationRunner implements ApplicationRunner {
         report.put("expected", expected); report.put("valid", valid); report.put("failed", 0);
         report.put("dlt", dlt); report.put("missing", missing); report.put("duplicate", duplicates);
         report.put("unexpected", unexpected); report.put("invalid", invalid);
+        Collections.sort(latencyNanos);
+        Map<String, Object> latency = new LinkedHashMap<>();
+        latency.put("count", latencyNanos.size());
+        if (!latencyNanos.isEmpty()) {
+            latency.put("minNanos", latencyNanos.get(0));
+            latency.put("meanNanos", latencyNanos.stream().mapToDouble(Long::doubleValue).average().orElse(0));
+            latency.put("p50Nanos", percentile(latencyNanos, 0.50));
+            latency.put("p95Nanos", percentile(latencyNanos, 0.95));
+            latency.put("p99Nanos", percentile(latencyNanos, 0.99));
+            latency.put("maxNanos", latencyNanos.get(latencyNanos.size() - 1));
+        }
+        report.put("latency", latency);
         report.put("status", missing == 0 && duplicates == 0 && unexpected == 0 && invalid == 0 && dlt == 0 ? "PASS" : "FAIL");
         Path output = Path.of("benchmark-results", runId, "validation.json");
         Files.createDirectories(output.getParent());
@@ -117,6 +131,10 @@ public class ValidationRunner implements ApplicationRunner {
     private boolean atEnd(KafkaConsumer<String, String> consumer, Map<TopicPartition, Long> ends) {
         for (var entry : ends.entrySet()) if (consumer.position(entry.getKey()) < entry.getValue()) return false;
         return true;
+    }
+    private long percentile(List<Long> sorted, double percentile) {
+        int index = Math.max(0, (int) Math.ceil(percentile * sorted.size()) - 1);
+        return sorted.get(index);
     }
     private String required(ApplicationArguments args, String name) {
         if (!args.containsOption(name) || args.getOptionValues(name).isEmpty()) throw new IllegalArgumentException("--" + name + " is required");
