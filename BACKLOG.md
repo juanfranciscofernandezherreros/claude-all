@@ -297,6 +297,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - [ ] B10.7.3 **BLOCKED — pendiente.** Separar lectura Kafka, validación de contrato/integridad, estadísticas y escritura de informes sin aumentar memoria ni cambiar aislamiento por runId.
   - [ ] B10.7.4 **BLOCKED — pendiente.** Revisar DIP/ISP/OCP y contratos de implementaciones donde haya variaciones reales; añadir pruebas de contrato compartidas cuando existan implementaciones intercambiables.
   - Artefactos: clases Java afectadas y tests JUnit/Testcontainers existentes o ampliados; actualizar README/PRD solo si cambia comportamiento (no previsto).
+  - [x] B10.7.5 **DONE — pendiente de verificación CI.** Aplicados nombres descriptivos a condiciones compuestas y reglas de aceptación en `InputMessageProcessor`, `MessageIdFactory`, `LatencyStatistics`, `GeneratorRunner` y `ValidationRunner`. Se mantienen inline las comprobaciones simples y evidentes. Commits: `128d902`, `6423b12`, `41775a8`, `591cbbf`, `3adfa59`. Pendiente ejecutar `./mvnw -B clean verify` y revisar el diff completo.
   - Prueba: `./mvnw -B clean verify`; pruebas de contrato para offsets/ACK, DLT y transacciones EOS; smoke CI del flujo; comparar artefactos y métricas antes/después. No aceptar regresiones ni afirmar mejora de rendimiento sin medición.
 
 **Aceptación final:** PRD Definition of Done satisfecho; instrucciones funcionan desde clon limpio; informe final distingue ejecutado, fallido y bloqueado.
