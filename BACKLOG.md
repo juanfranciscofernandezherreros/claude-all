@@ -237,7 +237,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: convertir matriz PRD en escenarios inmutables; aplicar parámetros explícitos; validar argumentos CLI; ejecutar suite principal por defecto y las secundarias solo con --full-suite.
   - Artefactos: ScenarioMatrix, CLI benchmark y scripts.
   - Prueba: dry-run imprime escenarios exactos; tests confirman número/valores de casos.
-- [x] B09.4 **DONE — pendiente de verificación de artefactos.** Reportes por run y cabecera CSV de escenario aislado; scripts Linux crean `benchmark-results` y preparan permisos de escritura (`8be44ae`, `f6af4fe`, `6c7aa0b`). CI detectó `AccessDeniedException` con el usuario no-root 10001 en bind mount; nueva CI prepara el directorio antes de Compose (`c47c93f`). Pendiente smoke PASS y comprobar los seis artefactos.
+- [x] B09.4 **DONE — pendiente de verificación de artefactos.** Reportes por run y cabecera CSV de escenario aislado; scripts Linux crean `benchmark-results` y preparan permisos de escritura (`8be44ae`, `f6af4fe`, `6c7aa0b`). CI detectó `AccessDeniedException` con el usuario no-root 10001 en bind mount; CI `44525507145` confirmó smoke PASS 100 mensajes. `run-scenario.sh` prepara también permisos de las carpetas de warm-up y cada repetición (`dd59680`) para que el usuario 10001 pueda crear `offsets.json`; la CI se amplía para comprobar tres repeticiones y seis artefactos.
   - Pasos: crear directorio por run; escribir archivos atómicamente; usar UTF-8; mantener CSV con columnas fijas; reportar fallos sin borrar logs.
   - Artefactos: seis ficheros obligatorios por ejecución.
   - Prueba: JSON parseable, CSV legible y reporte contiene configuración, tiempos, integridad y estado.
