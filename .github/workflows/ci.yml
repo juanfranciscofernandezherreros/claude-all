@@ -22,5 +22,7 @@ jobs:
           cache: maven
       - name: Make Maven launcher executable
         run: chmod +x mvnw
+      - name: Validate Docker Compose
+        run: docker compose config --quiet
       - name: Verify
         run: ./mvnw -B clean verify
