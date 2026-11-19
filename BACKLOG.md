@@ -177,7 +177,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: iniciar transacción; enviar salida; enviar offsets del consumer group a transacción; commit; ante excepción abortar; no hacer commit manual fuera de transacción.
   - Artefactos: TransactionalMessageHandler.
   - Prueba: salida y offset avanzan juntos o ninguno avanza.
-- [x] B06.3 **DONE — pendiente de verificación.** Test de atomicidad escrito; en CI `bf6acc9` se omitió porque Testcontainers 1.20.6 negocia Docker API 1.32 y el runner exige 1.40. La actualización a 1.21.3 (`cfa156a`) no resolvió el Docker API 1.32; actualizado a 1.21.4 (`b896007`) que incorpora soporte para Docker Engine 29. Falta confirmar ejecución del contenedor, abort y restart.
+- [x] B06.3 **DONE — pendiente de verificación ampliada.** CI `984f8ed` ejecutó el test con Testcontainers 1.21.4 + Kafka 3.9.1 (1 passed, 0 skipped): abort de output+offset, offset sin avance y commit atómico. Commit `5d28345` añadió comprobaciones `read_committed`/`read_uncommitted` y reinicio del consumer; la primera CI falló solo por usar `.stream()` sobre `Iterable`, corregido en `81994a9`. Pendiente ejecutar las nuevas assertions.
   - Pasos: caso éxito; fallo antes del commit; caída/reinicio; lectura con read_committed y read_uncommitted para demostrar diferencia.
   - Artefactos: tests Testcontainers.
   - Prueba: registros abortados invisibles en read_committed y offsets coherentes.
@@ -269,7 +269,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: describir instalación exacta; quick start; parada; suites; endpoints; parámetros; problemas comunes; ruta de resultados.
   - Artefactos: README.md.
   - Prueba: persona con clon limpio puede seguir pasos sin consultar conversación.
-- [x] B10.4 **DONE — pendiente de verificación de integración.** CI `bf6acc9` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests ejecutados, 7 pasaron y el test Testcontainers fue omitido por incompatibilidad Docker API (1.32 vs 1.40). `docker compose config --quiet` pasó. Testcontainers 1.21.4 (`b896007`) ya conecta con Docker API 1.54; CI detectó que Kafka 3.9.0 cae por KAFKA-18281. Broker de Compose y test actualizados a Kafka 3.9.1 (`c882202`, `984f8ed`), PRD/README alineados. Workflow usa actions v5 (`d9e1380`). Pendiente nueva CI con test de integración, smoke y benchmark 1M.
+- [x] B10.4 **DONE — pendiente de smoke Compose.** CI `984f8ed` ejecutó `./mvnw -B clean verify`: BUILD SUCCESS, 8 tests pasaron y 0 omitidos; Testcontainers Kafka 3.9.1 pasó. `docker compose config --quiet` pasó. Workflow actualizado en `e00d692` para construir/arrancar Kafka+app, comprobar health y ejecutar generate+validate de 100 mensajes; la primera ejecución no llegó a estos pasos porque falló la compilación de test en B06.3, corregida en `81994a9`. Pendiente CI completa, smoke Compose y benchmark 1M.
   - Pasos: ejecutar build; unit/integration; compose; smoke pequeño; 1M; validador; suites extra solo si solicitadas; guardar comandos y exit codes.
   - Artefactos: informes y logs de ejecución.
   - Prueba: evidencias verificables; si el entorno bloquea, estado BLOCKED con causa concreta.
