@@ -42,6 +42,7 @@ public class GeneratorRunner implements ApplicationRunner {
         String payload = "x".repeat(properties.payloadBytes());
         ExecutorService pool = Executors.newFixedThreadPool(properties.generatorThreads());
         AtomicLong completed = new AtomicLong();
+        long publishStartEpochMs = System.currentTimeMillis();
         long start = System.nanoTime();
         List<Future<?>> workers = new ArrayList<>();
         try {
