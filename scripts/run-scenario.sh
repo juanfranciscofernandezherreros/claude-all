@@ -14,10 +14,14 @@ chmod 777 "$results"
 export CONCURRENCY="$concurrency" PAYLOAD_BYTES="$payload" WORKLOAD="$workload" DELIVERY_MODE="$delivery"
 docker compose up -d --force-recreate app
 for attempt in $(seq 1 60); do
-  if docker compose exec -T app java -version >/dev/null 2>&1; then break; fi
+  if curl --fail --silent http://localhost:8080/actuator/health >/dev/null 2>&1; then break; fi
   sleep 2
 done
-docker compose exec -T app java -version >/dev/null 2>&1 || { echo "ERROR: application container did not start." >&2; exit 1; }
+curl --fail --silent http://localhost:8080/actuator/health >/dev/null || {
+  echo "ERROR: application health endpoint did not become ready." >&2
+  docker compose logs --no-color app
+  exit 1
+}
 java_version=$(docker compose exec -T app java -version 2>&1 | sed -n '1p')
 docker_version=$(docker version --format '{{.Server.Version}}')
 warmup="warmup-${name}-$(date +%s)-$$"
