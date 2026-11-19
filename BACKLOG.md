@@ -81,7 +81,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
 
 ### B02 — Kafka local reproducible
 **Depende:** B01.
-- [x] B02.1 **DONE — pendiente de build Docker.**
+- [x] B02.1 **DONE.**
   - Pasos: etapa build con JDK 21 y Maven Wrapper; etapa runtime JRE 21 no-root; copiar solo artefacto; healthcheck app si procede; fijar imagen base.
   - Artefactos: Dockerfile y .dockerignore.
   - Prueba: docker build finaliza y contenedor arranca con usuario no-root.
