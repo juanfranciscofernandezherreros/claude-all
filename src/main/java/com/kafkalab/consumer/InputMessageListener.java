@@ -12,6 +12,7 @@ import com.kafkalab.producer.OutputPublisher;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -73,7 +74,7 @@ public class InputMessageListener {
             throw new IllegalStateException("Could not serialize output", e);
         }
         metrics.outputPublished();
-        metrics.recordEndToEnd(Duration.between(input.createdAt(), processedAt));
+        metrics.recordEndToEnd(Duration.between(input.createdAt(), output.processedAt()));
         metrics.stopProcessing(processingSample);
     }
 
