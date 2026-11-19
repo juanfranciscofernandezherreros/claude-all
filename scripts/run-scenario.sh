@@ -10,6 +10,7 @@ results="benchmark-results"
 python_bin=$(command -v python3 || command -v python || true)
 if [ -z "$python_bin" ]; then echo "ERROR: Python 3 is required to assemble benchmark reports." >&2; exit 1; fi
 mkdir -p "$results"
+chmod 777 "$results"
 export CONCURRENCY="$concurrency" PAYLOAD_BYTES="$payload" WORKLOAD="$workload" DELIVERY_MODE="$delivery"
 docker compose up -d --force-recreate app
 for attempt in $(seq 1 60); do
