@@ -35,8 +35,8 @@ class MessageEnvelopeContractTest {
 
         JsonNode json = mapper.readTree(mapper.writeValueAsBytes(dlt));
         assertTrue(json.has("originalPayload"));
-        assertEquals("IllegalArgumentException", json.path("exception").asText());
-        assertEquals("invalid payload", json.path("reason").asText());
+        assertEquals("IllegalArgumentException", json.path("errorType").asText());
+        assertEquals("invalid payload", json.path("errorMessage").asText());
         assertTrue(json.has("failedAt"));
         assertEquals(dlt, mapper.treeToValue(json, DltMessage.class));
     }
