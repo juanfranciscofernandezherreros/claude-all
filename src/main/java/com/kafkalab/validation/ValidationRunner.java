@@ -1,6 +1,7 @@
 package com.kafkalab.validation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.kafkalab.config.LabProperties;
 import com.kafkalab.model.DltMessage;
 import com.kafkalab.model.InputMessage;
@@ -57,7 +58,18 @@ public class ValidationRunner implements ApplicationRunner {
             }
             consumer.assign(partitions);
             Map<TopicPartition, Long> ends = consumer.endOffsets(partitions, Duration.ofSeconds(20));
-            consumer.seekToBeginning(partitions);
+            Path snapshotFile = Path.of("benchmark-results", runId, "offsets.json");
+            if (Files.exists(snapshotFile)) {
+                List<Map<String, Object>> snapshot = mapper.readValue(snapshotFile.toFile(), new TypeReference<>() {});
+                Map<TopicPartition, Long> starts = new HashMap<>();
+                for (Map<String, Object> item : snapshot) {
+                    starts.put(new TopicPartition((String) item.get("topic"), ((Number) item.get("partition")).intValue()),
+                            ((Number) item.get("offset")).longValue());
+                }
+                for (TopicPartition partition : partitions) consumer.seek(partition, starts.getOrDefault(partition, 0L));
+            } else {
+                consumer.seekToBeginning(partitions);
+            }
             long deadline = System.nanoTime() + Duration.ofSeconds(timeoutSeconds).toNanos();
             while (!atEnd(consumer, ends) && System.nanoTime() < deadline) {
                 for (ConsumerRecord<String, String> record : consumer.poll(Duration.ofMillis(500))) {
