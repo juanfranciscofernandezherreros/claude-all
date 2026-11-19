@@ -58,7 +58,7 @@ Los scripts `mvnw`/`mvnw.cmd` descargan Maven 3.9.9 en el perfil local del usuar
 
 Flujo: generador → `input-topic` → consumer → SHA-256/workload → `output-topic`. Mensajes inválidos o fallos permanentes se contabilizan en `input-dlt-topic`. El consumer espera el ACK del productor antes de confirmar offsets en AT_LEAST_ONCE. En EXACTLY_ONCE, salida y offset se publican en una transacción Kafka y los lectores usan `read_committed`.
 
-El validador es un proceso separado: captura offsets de inicio, espera a que el consumer group confirme el rango de entrada, fija entonces los endOffsets finales de output/DLT y compara secuencias, duplicados, ausencias, extras, esquema y checksum contra los mensajes de entrada. **Limitación conocida:** la implementación actual mantiene estructuras de checksum/IDs en memoria proporcional al número de mensajes; la comparación en disco o streaming está pendiente (B08.2).
+El validador es un proceso separado: captura offsets de inicio, espera a que el consumer group confirme el rango de entrada, fija entonces los endOffsets finales de output/DLT y compara secuencias, duplicados, ausencias, extras, esquema y checksum contra los mensajes de entrada. Los checksums esperados y reales se comparan mediante archivos temporales binarios (32 bytes por secuencia), eliminados al terminar la validación. La presencia se controla con bitsets y las latencias con un array primitivo `long` (aprox. 8 bytes por salida); no se mantienen todos los checksums ni mensajes en heap. La medición de memoria a escala 1M/5M sigue pendiente (B08.2).
 
 ## Puertos locales
 
