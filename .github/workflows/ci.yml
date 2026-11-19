@@ -87,14 +87,17 @@ jobs:
           for row in rows:
               assert row["status"] == "PASS", row
               folder = Path("benchmark-results") / row["runId"]
-              for name in ("offsets.json", "execution.log", "validation.json", "summary.json", "environment.json", "report.md", "prometheus-metrics.txt"):
+              for name in ("offsets.json", "execution.log", "validation.json", "summary.json", "environment.json", "report.md", "prometheus-metrics.txt", "resource-samples.tsv", "resource-samples.json"):
                   assert (folder / name).is_file(), f"missing {folder / name}"
               report = json.loads((folder / "validation.json").read_text(encoding="utf-8"))
               assert report["status"] == "PASS" and report["processingComplete"] is True
               environment = json.loads((folder / "environment.json").read_text(encoding="utf-8"))
-              for metric in ("memoryBytes", "heapUsedBytes", "gcPauseCount", "gcPauseSeconds", "kafkaConsumerLag"):
+              for metric in ("memoryBytes", "memoryPercentMax", "heapUsedBytes", "gcPauseCount", "gcPauseSeconds", "kafkaConsumerLag"):
                   assert environment[metric] is not None, f"missing environment metric {metric}: {environment}"
-          print("3 benchmark repetitions passed; all artifacts and runtime metrics present.")
+              assert environment["resourceSampleCount"] >= 1, environment
+              samples = json.loads((folder / "resource-samples.json").read_text(encoding="utf-8"))
+              assert len(samples) == environment["resourceSampleCount"]
+          print("3 benchmark repetitions passed; all artifacts and periodic resource samples present.")
           PY
       - name: Stop Kafka stack
         if: always()
