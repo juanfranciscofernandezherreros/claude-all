@@ -337,7 +337,8 @@ class KafkaTransactionIntegrationTest {
         var environment = new org.springframework.mock.env.MockEnvironment()
                 .withProperty("spring.kafka.bootstrap-servers", KAFKA.getBootstrapServers());
         com.kafkalab.validation.ValidationRunner runner = new com.kafkalab.validation.ValidationRunner(
-                environment, labProperties, mapper, checksums);
+                environment, labProperties, mapper, checksums,
+                new com.kafkalab.validation.ValidationReportWriter(mapper));
 
         try {
             runner.run(new org.springframework.boot.DefaultApplicationArguments(
