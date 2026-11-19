@@ -96,6 +96,25 @@ Copia `.env.example` a `.env` y modifica solo lo necesario. Los valores predeter
 
 El generador tiene un timeout global de 600 segundos por defecto; el tercer argumento de `generate.bat`/`generate.sh` permite cambiarlo (segundos). Los escenarios del benchmark aceptan `GENERATOR_TIMEOUT_SECONDS` como variable de entorno. No se usan sleeps artificiales en el procesamiento. Rangos: `MESSAGES` > 0; `PARTITIONS` = 24; `CONCURRENCY` = 1/2/5/10/20; `BATCH_SIZE` = 1–10000; `PRODUCER_BATCH_BYTES` > 0; `GENERATOR_THREADS` = 1–64; `PAYLOAD_BYTES` = 1024/5120/10240/51200/102400. `DELIVERY_MODE` y `WORKLOAD` aceptan los enums indicados. `COMPRESSION_TYPE`, `LINGER_MS`, `APP_PORT`, `KAFKA_BOOTSTRAP_SERVERS` y `KAFKA_ISOLATION_LEVEL` se pasan a Spring/Kafka y deben ser compatibles con sus respectivas configuraciones. Las variables de Compose se interpolan desde `.env`; los valores de Spring tienen defaults equivalentes. Las variables se validan al arrancar cuando están mapeadas a `LabProperties`.
 
+### Variables de los runners (se exportan en la terminal, no en `.env`)
+
+| Variable | Default | Uso |
+|---|---:|---|
+| `GENERATOR_TIMEOUT_SECONDS` | 600 | Deadline global de generación por run |
+| `WARMUP_MESSAGES` | 10000 | Mensajes de warm-up antes de cada escenario |
+| `SCENARIO_REPETITIONS` | 3 | Repeticiones de cada escenario; stress usa 1 por defecto |
+| `RESOURCE_SAMPLE_INTERVAL_SECONDS` | 5 | Intervalo de muestreo de memoria, heap, GC y lag |
+| `SECONDARY_MESSAGES` | 100000 | Mensajes por repetición de cada escenario secundario |
+| `STRESS_MESSAGES` | 5000000 | Límite acumulado del stress runner |
+| `STRESS_STEP_MESSAGES` | 100000 | Incremento de mensajes por escalón de stress |
+| `STRESS_CONCURRENCY` | 20 | Concurrencia del stress runner |
+| `STRESS_PAYLOAD_BYTES` | 102400 | Payload del stress runner |
+| `STRESS_WORKLOAD` | HEAVY | Perfil de carga del stress runner |
+| `STRESS_DELIVERY_MODE` | EXACTLY_ONCE | Semántica del stress runner |
+| `STRESS_REPETITIONS` | 1 | Repeticiones por escalón |
+
+Ejemplo Linux/macOS: `RESOURCE_SAMPLE_INTERVAL_SECONDS=2 WARMUP_MESSAGES=5000 bash scripts/run-benchmark.sh 1000000`. En Windows, establece las variables con `set VARIABLE=valor` antes de invocar el `.bat`.
+
 ## Resultados
 
 Cada ejecución medida crea `benchmark-results/<runId>/` con:
