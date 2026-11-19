@@ -38,8 +38,12 @@ public class GeneratorRunner implements ApplicationRunner {
         long count = args.containsOption("messages")
                 ? Long.parseLong(args.getOptionValues("messages").get(0)) : properties.messages();
         if (count < 1) throw new IllegalArgumentException("--messages must be positive");
+        long timeoutSeconds = args.containsOption("timeout-seconds")
+                ? Long.parseLong(args.getOptionValues("timeout-seconds").get(0)) : 600L;
+        if (timeoutSeconds < 1) throw new IllegalArgumentException("--timeout-seconds must be positive");
         String runId = args.containsOption("run-id") ? args.getOptionValues("run-id").get(0) : ids.newRunId();
         snapshotOffsets(runId);
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
         String payload = "x".repeat(properties.payloadBytes());
         ExecutorService pool = Executors.newFixedThreadPool(properties.generatorThreads());
         AtomicLong completed = new AtomicLong();
@@ -68,7 +72,7 @@ public class GeneratorRunner implements ApplicationRunner {
                                     long sequence = currentBlockStart + i;
                                     transactionAcks.add(operations.send(properties.inputTopic(), ids.create(runId, sequence), records.get(i)));
                                 }
-                                awaitAcknowledgements(transactionAcks);
+                                awaitAcknowledgements(transactionAcks, deadlineNanos);
                                 return true;
                             });
                         } else {
@@ -76,7 +80,7 @@ public class GeneratorRunner implements ApplicationRunner {
                                 long sequence = blockStart + i;
                                 acknowledgements.add(kafka.send(properties.inputTopic(), ids.create(runId, sequence), records.get(i)));
                             }
-                            awaitAcknowledgements(acknowledgements);
+                            awaitAcknowledgements(acknowledgements, deadlineNanos);
                         }
                         long n = completed.addAndGet(records.size());
                         if (n / 10_000 > (n - records.size()) / 10_000) {
@@ -85,8 +89,9 @@ public class GeneratorRunner implements ApplicationRunner {
                     }
                 }));
             }
-            for (Future<?> worker : workers) worker.get();
-            kafka.flush();
+            for (Future<?> worker : workers) {
+                worker.get(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS);
+            }
             double seconds = (System.nanoTime() - start) / 1_000_000_000d;
             System.out.printf("{\"runId\":\"%s\",\"published\":%d,\"publishStartEpochMs\":%d,\"publishSeconds\":%.6f}%n", runId, completed.get(), publishStartEpochMs, seconds);
         } finally {
@@ -102,14 +107,20 @@ public class GeneratorRunner implements ApplicationRunner {
         }
     }
 
-    private static void awaitAcknowledgements(List<Future<?>> acknowledgements) {
+    private static void awaitAcknowledgements(List<Future<?>> acknowledgements, long deadlineNanos) {
         for (Future<?> acknowledgement : acknowledgements) {
             try {
-                acknowledgement.get(60, TimeUnit.SECONDS);
+                acknowledgement.get(remainingNanos(deadlineNanos), TimeUnit.NANOSECONDS);
             } catch (Exception e) {
-                throw new CompletionException("Kafka did not acknowledge a generated batch", e);
+                throw new CompletionException("Kafka did not acknowledge the generated batch before the global timeout", e);
             }
         }
+    }
+
+    private static long remainingNanos(long deadlineNanos) throws TimeoutException {
+        long remaining = deadlineNanos - System.nanoTime();
+        if (remaining <= 0) throw new TimeoutException("Generation exceeded --timeout-seconds");
+        return remaining;
     }
 
     private void snapshotOffsets(String runId) throws Exception {
