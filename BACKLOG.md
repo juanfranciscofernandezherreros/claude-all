@@ -2,6 +2,14 @@
 
 Este backlog es el plan obligatorio de implementación. Ejecutar en orden; las dependencias son bloqueantes. PRD.md define el contrato funcional y prevalece ante detalles de negocio. No añadir tecnologías ni alcance. Cada tarea se cierra solo con sus evidencias; actualizar su estado en este archivo. Estados: DONE solo con verificación ejecutada; DONE — pendiente de verificación cuando la implementación está escrita pero falta entorno; BLOCKED cuando falta implementación o una prueba necesaria.
 
+
+## Regla obligatoria de checkbox (no omitir)
+- Actualizar `BACKLOG.md` inmediatamente al completar cada tarea o micro-paso y hacer commit visible de esa actualización; nunca acumular los cambios de estado para el final.
+- `[x]` significa que la implementación de la tarea está completada y registrada. También se marca `[x]` si solo falta una verificación que no puede ejecutarse en el entorno actual; en ese caso escribir `DONE — pendiente de verificación` y especificar la prueba pendiente.
+- `[ ]` significa que la tarea sigue incompleta o está bloqueada porque falta implementación o trabajo necesario; escribir `BLOCKED — causa concreta`.
+- Escribir `DONE` sin calificativo solo después de ejecutar y superar la prueba de aceptación.
+- No basta con cambiar la etiqueta de estado: **la casilla debe cambiarse siempre**. Antes de cerrar cada sesión, revisar que ninguna tarea completada durante ella siga con `[ ]`.
+
 ## Nivel obligatorio de detalle
 Cada ID de tarea es una unidad ejecutable, no una sugerencia. Antes de implementarla, Claude debe:
 1. Leer solo los archivos implicados y comprobar dependencias DONE.
