@@ -76,7 +76,14 @@ class KafkaTransactionIntegrationTest {
             transactionalProducer.initTransactions();
             transactionalProducer.beginTransaction();
             transactionalProducer.send(new ProducerRecord<>(output, consumed.key(), "aborted")).get();
+            transactionalProducer.sendOffsetsToTransaction(
+                    Map.of(new TopicPartition(input, consumed.partition()), new OffsetAndMetadata(consumed.offset() + 1)),
+                    consumer.groupMetadata());
             transactionalProducer.abortTransaction();
+            try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
+                var afterAbort = admin.listConsumerGroupOffsets("eos-group").partitionsToOffsetAndMetadata().get();
+                assertEquals(0L, afterAbort.getOrDefault(new TopicPartition(input, 0), new OffsetAndMetadata(0)).offset());
+            }
             transactionalProducer.beginTransaction();
             transactionalProducer.send(new ProducerRecord<>(output, consumed.key(), "output")).get();
             transactionalProducer.sendOffsetsToTransaction(
