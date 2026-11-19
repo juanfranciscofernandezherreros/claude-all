@@ -309,7 +309,7 @@ class KafkaTransactionIntegrationTest {
             producer.send(new ProducerRecord<>(outputTopic, unexpected.messageId(), mapper.writeValueAsString(unexpected))).get(10, java.util.concurrent.TimeUnit.SECONDS);
             producer.send(new ProducerRecord<>(outputTopic, "corrupt", "{not-json")).get(10, java.util.concurrent.TimeUnit.SECONDS);
             com.kafkalab.model.DltMessage dlt = new com.kafkalab.model.DltMessage(
-                    mapper.writeValueAsString(deadLetterInput), "IllegalArgumentException", "fixture", created);
+                    mapper.writeValueAsString(deadLetterInput), "InvalidInputMessageException", "fixture", created);
             producer.send(new ProducerRecord<>(dltTopic, runId + "-3", mapper.writeValueAsString(dlt))).get(10, java.util.concurrent.TimeUnit.SECONDS);
         }
 
@@ -343,7 +343,7 @@ class KafkaTransactionIntegrationTest {
             runner.run(new org.springframework.boot.DefaultApplicationArguments(
                     "--validate", "--run-id=" + runId, "--messages=3", "--timeout-seconds=10"));
             fail("validator must fail for deliberately injected anomalies");
-        } catch (IllegalStateException expectedFailure) {
+        } catch (com.kafkalab.exception.ValidationFailedException expectedFailure) {
             assertTrue(expectedFailure.getMessage().contains("Independent validation failed"));
         }
 
