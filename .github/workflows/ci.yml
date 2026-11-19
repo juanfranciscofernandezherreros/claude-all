@@ -47,7 +47,7 @@ jobs:
       - name: End-to-end benchmark smoke test
         run: |
           scenario="ci-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          bash scripts/run-scenario.sh "${scenario}" 100 1 1024 LIGHT AT_LEAST_ONCE
+          WARMUP_MESSAGES=100 bash scripts/run-scenario.sh "${scenario}" 100 1 1024 LIGHT AT_LEAST_ONCE
           python3 - <<'PY'
           import csv, json
           from pathlib import Path
