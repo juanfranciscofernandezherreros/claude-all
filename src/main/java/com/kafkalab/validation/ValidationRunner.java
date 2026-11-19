@@ -103,7 +103,8 @@ public class ValidationRunner implements ApplicationRunner {
                             InputMessage input = mapper.readValue(record.value(), InputMessage.class);
                             if (input.messageId().startsWith(runId + "-")) {
                                 long sequence = input.payload().sequence();
-                                if (sequence >= 1 && sequence <= expected) {
+                                boolean isSequenceWithinExpectedRange = sequence >= 1 && sequence <= expected;
+                                if (isSequenceWithinExpectedRange) {
                                     if (inputSequences.get((int) sequence)) {
                                         invalid++;
                                     } else {
@@ -194,7 +195,7 @@ public class ValidationRunner implements ApplicationRunner {
                 && hasNoUnexpectedOutputs && hasNoInvalidRecords && hasNoDeadLetterRecords;
         report.put("status", passedValidation ? "PASS" : "FAIL");
         reportWriter.write(reportPath, report);
-        if (!"PASS".equals(report.get("status"))) throw new ValidationFailedException("Independent validation failed; see " + reportPath);
+        if (!passedValidation) throw new ValidationFailedException("Independent validation failed; see " + reportPath);
     }
 
     private boolean groupCommittedThrough(AdminClient admin, Map<TopicPartition, Long> required) throws Exception {
@@ -212,7 +213,8 @@ public class ValidationRunner implements ApplicationRunner {
         return true;
     }
     private String required(ApplicationArguments args, String name) {
-        if (!args.containsOption(name) || args.getOptionValues(name).isEmpty()) throw new IllegalArgumentException("--" + name + " is required");
+        boolean isRequiredOptionMissing = !args.containsOption(name) || args.getOptionValues(name).isEmpty();
+        if (isRequiredOptionMissing) throw new IllegalArgumentException("--" + name + " is required");
         return args.getOptionValues(name).get(0);
     }
 }
