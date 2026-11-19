@@ -147,4 +147,63 @@ class KafkaTransactionIntegrationTest {
             assertTrue(replayed.isEmpty(), "restarted group must resume after the transactionally committed offset");
         }
     }
+    @Test
+    void publishesTenThousandRecordsWithStableKeyPartitioning() throws Exception {
+        String topic = "generator-load-" + UUID.randomUUID();
+        try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
+            admin.createTopics(List.of(new NewTopic(topic, 24, (short) 1))).all().get();
+        }
+
+        Properties producerProperties = new Properties();
+        producerProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());
+        producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        producerProperties.put(ProducerConfig.ACKS_CONFIG, "all");
+        Map<String, Integer> keyPartitions = new java.util.HashMap<>();
+        try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProperties)) {
+            List<java.util.concurrent.Future<org.apache.kafka.clients.producer.RecordMetadata>> acknowledgements =
+                    new java.util.ArrayList<>(10_000);
+            for (int sequence = 1; sequence <= 10_000; sequence++) {
+                String key = "generator-key-" + (sequence % 10);
+                acknowledgements.add(producer.send(new ProducerRecord<>(topic, key, "payload-" + sequence)));
+            }
+            for (var acknowledgement : acknowledgements) {
+                var metadata = acknowledgement.get(30, java.util.concurrent.TimeUnit.SECONDS);
+                String key = "generator-key-" + (Integer.parseInt(metadata.topic()) % 10);
+                // Partition consistency is asserted below using the key recorded with each future.
+                assertTrue(metadata.partition() >= 0 && metadata.partition() < 24);
+            }
+            producer.flush();
+        }
+
+        Properties consumerProperties = new Properties();
+        consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());
+        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "generator-load-reader-" + UUID.randomUUID());
+        consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProperties)) {
+            List<TopicPartition> partitions = java.util.stream.IntStream.range(0, 24)
+                    .mapToObj(partition -> new TopicPartition(topic, partition)).toList();
+            consumer.assign(partitions);
+            consumer.seekToBeginning(partitions);
+            int received = 0;
+            long deadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
+            while (received < 10_000 && System.nanoTime() < deadline) {
+                var records = consumer.poll(Duration.ofMillis(500));
+                received += records.count();
+                for (var record : records) {
+                    Integer previousPartition = keyPartitions.putIfAbsent(record.key(), record.partition());
+                    if (previousPartition != null) {
+                        assertEquals(previousPartition.intValue(), record.partition(),
+                                "same Kafka key must always map to the same partition");
+                    }
+                }
+            }
+            assertEquals(10_000, received, "all acknowledged generator records must be readable");
+            assertEquals(10, keyPartitions.size());
+        }
+    }
+
 }
