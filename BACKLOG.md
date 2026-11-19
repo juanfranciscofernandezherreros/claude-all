@@ -291,9 +291,11 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Fuente: https://github.com/juanfranciscofernandezherreros/springboot-agent-rules/blob/master/docs/annotations.md
 
 ### B10.9 — Excepciones propias y semántica de errores
-- [ ] B10.9 **BLOCKED — regla documentada; auditoría y adaptación del código pendientes.** Añadida la convención obligatoria de excepciones propias a `AGENTS.md` (commit `9ee7b51`). Revisar producción y tests para sustituir excepciones genéricas cuando expresen errores de aplicación, separar errores de entrada de fallos técnicos y conservar causas y semántica Kafka.
-  - Pasos: inventariar todos los `throw`, `catch` y tipos de excepción; definir excepciones propias cohesivas; adaptar productores, consumidores, validadores y CLI; actualizar pruebas de tipo/causa/tratamiento; verificar que retry, DLT, ACK, offsets y EOS no cambian.
-  - Prueba: `./mvnw -B clean verify`, pruebas focalizadas de DLT/reintentos/publicación/validación y smoke de transacciones EOS.
+- [ ] B10.9 **BLOCKED — aplicación parcial; faltan excepciones técnicas/de validación, auditoría completa y CI.** Regla añadida a `AGENTS.md` (`9ee7b51`). `InvalidInputMessageException` ya representa los mensajes que incumplen el contrato; `InputMessageListener` solo envía ese tipo a DLT y los tests verifican el tipo serializado (`8050107`, `71a824f`, `b9c25bd`, `f11b172`). El estado sigue bloqueado hasta adaptar el resto de excepciones y superar las pruebas.
+  - [x] B10.9.1 **DONE — pendiente de verificación CI.** Añadida `InvalidInputMessageException` y aplicada al processor/listener; los tests esperan el tipo propio en DLT.
+  - [ ] B10.9.2 **BLOCKED — pendiente.** Clasificar y adaptar fallos de publicación/serialización/recuperación Kafka, validación final, argumentos CLI, checksum, estadísticas y almacenamiento temporal.
+  - [ ] B10.9.3 **BLOCKED — pendiente.** Auditar todos los `throw`/`catch` de producción y tests; verificar causas, clasificación retryable/no-retryable y compatibilidad de los mensajes DLT.
+  - Prueba: `./mvnw -B clean verify`, pruebas focalizadas de DLT/reintentos/publicación/validación y smoke de transacciones EOS. Estado CI del commit `f11b172`: sin checks reportados; no se declara PASS.
 
 ### B10.7 — Auditoría y refactor SOLID del código existente
 - [ ] B10.7 **BLOCKED — refactor parcial; quedan responsabilidades por separar y CI pendiente.** Primera inspección: `InputMessageListener` combinaba deserialización, validación de entrada, política de procesamiento, publicación Kafka, gestión de offsets y métricas; `GeneratorRunner` combina CLI, concurrencia, serialización, publicación y snapshots de offsets; `ValidationRunner` combina lectura Kafka, validación de contrato/integridad, estadísticas y escritura de informes. No crear interfaces hasta identificar contratos reales.
