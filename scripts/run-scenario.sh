@@ -39,7 +39,7 @@ for repetition in 1 2 3; do
     | tee "$results/$run_id/validation-console.json"
 docker_memory_usage=$(docker stats --no-stream --format '{{.MemUsage}}' kafka-lab-app 2>/dev/null || true)
 prometheus_metrics=$(curl -fsS http://localhost:8080/actuator/prometheus 2>/dev/null || true)
-consumer_lag=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group kafka-lab 2>/dev/null | awk 'NR>1 && $6 ~ /^[0-9]+$/ {sum += $6} END {if (NR>1) print sum; else print ""}' || true)
+consumer_lag=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group kafka-lab 2>/dev/null | awk 'NR>1 && $6 ~ /^[0-9]+$/ {sum += $6; found=1} END {if (found) print sum; else print ""}' || true)
   "$python_bin" - "$results/$run_id" "$results/results.csv" "$name" "$concurrency" "$messages" "$payload" "$workload" "$delivery" "$java_version" "$docker_version" "$docker_memory_usage" "$prometheus_metrics" "$consumer_lag" <<'PY'
 import json,sys,platform,os,datetime,re
 folder,csv_path,name,concurrency,messages,payload,workload,delivery,java_version,docker_version,docker_memory_usage,prometheus_metrics,consumer_lag=sys.argv[1:]
