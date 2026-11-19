@@ -227,6 +227,9 @@ class KafkaTransactionIntegrationTest {
         try (AdminClient admin = AdminClient.create(Map.of("bootstrap.servers", KAFKA.getBootstrapServers()))) {
             admin.createTopics(List.of(new NewTopic(inputTopic, 1, (short) 1),
                     new NewTopic(outputTopic, 1, (short) 1), new NewTopic(dltTopic, 1, (short) 1))).all().get();
+            awaitTopicLeaders(admin, inputTopic, 1);
+            awaitTopicLeaders(admin, outputTopic, 1);
+            awaitTopicLeaders(admin, dltTopic, 1);
         }
 
         com.fasterxml.jackson.databind.ObjectMapper mapper =
@@ -246,14 +249,14 @@ class KafkaTransactionIntegrationTest {
                 new com.kafkalab.model.OutputMessage.Result(4, checksums.sha256(payload)));
 
         try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProperties(KAFKA.getBootstrapServers()))) {
-            producer.send(new ProducerRecord<>(inputTopic, input.messageId(), mapper.writeValueAsString(input))).get();
-            producer.send(new ProducerRecord<>(outputTopic, valid.messageId(), mapper.writeValueAsString(valid))).get();
-            producer.send(new ProducerRecord<>(outputTopic, valid.messageId(), mapper.writeValueAsString(valid))).get();
-            producer.send(new ProducerRecord<>(outputTopic, unexpected.messageId(), mapper.writeValueAsString(unexpected))).get();
-            producer.send(new ProducerRecord<>(outputTopic, "corrupt", "{not-json")).get();
+            producer.send(new ProducerRecord<>(inputTopic, input.messageId(), mapper.writeValueAsString(input))).get(10, java.util.concurrent.TimeUnit.SECONDS);
+            producer.send(new ProducerRecord<>(outputTopic, valid.messageId(), mapper.writeValueAsString(valid))).get(10, java.util.concurrent.TimeUnit.SECONDS);
+            producer.send(new ProducerRecord<>(outputTopic, valid.messageId(), mapper.writeValueAsString(valid))).get(10, java.util.concurrent.TimeUnit.SECONDS);
+            producer.send(new ProducerRecord<>(outputTopic, unexpected.messageId(), mapper.writeValueAsString(unexpected))).get(10, java.util.concurrent.TimeUnit.SECONDS);
+            producer.send(new ProducerRecord<>(outputTopic, "corrupt", "{not-json")).get(10, java.util.concurrent.TimeUnit.SECONDS);
             com.kafkalab.model.DltMessage dlt = new com.kafkalab.model.DltMessage(
                     mapper.writeValueAsString(deadLetterInput), "IllegalArgumentException", "fixture", created);
-            producer.send(new ProducerRecord<>(dltTopic, runId + "-3", mapper.writeValueAsString(dlt))).get();
+            producer.send(new ProducerRecord<>(dltTopic, runId + "-3", mapper.writeValueAsString(dlt))).get(10, java.util.concurrent.TimeUnit.SECONDS);
         }
 
         TopicPartition inputPartition = new TopicPartition(inputTopic, 0);
@@ -306,6 +309,20 @@ class KafkaTransactionIntegrationTest {
                 java.nio.file.Files.deleteIfExists(path);
             }
         }
+    }
+
+    private static void awaitTopicLeaders(AdminClient admin, String topic, int expectedPartitions) throws Exception {
+        long deadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
+        while (System.nanoTime() < deadline) {
+            var description = admin.describeTopics(List.of(topic)).allTopicNames()
+                    .get(5, java.util.concurrent.TimeUnit.SECONDS).get(topic);
+            if (description.partitions().size() == expectedPartitions
+                    && description.partitions().stream().allMatch(partition -> partition.leader() != null)) {
+                return;
+            }
+            Thread.sleep(100);
+        }
+        throw new java.util.concurrent.TimeoutException("Kafka leaders were not elected for " + topic);
     }
 
     private static Properties producerProperties(String bootstrapServers) {
