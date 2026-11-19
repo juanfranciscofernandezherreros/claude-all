@@ -213,7 +213,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: obtener rango esperado 1..N; almacenar IDs vistos en estructura acotada/disco; contar ocurrencias; verificar schema/checksum/sequence; agregar DLT y fallidos.
   - Artefactos: ValidationReport y almacenamiento temporal limpiable.
   - Prueba: dataset sintético detecta missing, duplicate, unexpected, corrupto y DLT por separado.
-- [x] B08.3 **DONE — pendiente de fixtures de anomalías.** `validation.json` incluye contadores, latencia, `processingComplete` y no declara PASS si el grupo no ha confirmado offsets (`2a300e9`, scope fix `4f92990`). CI `4f92990`: smoke 100 mensajes, `processingComplete=true`, `status=PASS`, exit code 0. Pendientes tests missing/duplicate/unexpected/corrupto/DLT.
+- [x] B08.3 **DONE.** Testcontainers fixture de B08.4 ejecuta `ValidationRunner` con anomalías conocidas, comprueba que `validation.json` se escribe con contadores exactos y `status=FAIL`, y que `run()` lanza `IllegalStateException` (exit no-cero para el CLI); CI `44533189080` superó `clean verify`.
   - Pasos: incluir expected/valid/failed/DLT/missing/duplicate/unexpected/invalid; incluir runId y timestamp; definir exit 0 solo si criterios PRD pasan.
   - Artefactos: validation.json y CLI validate.
   - Prueba: caso íntegro exit 0; cada anomalía exit no cero.
