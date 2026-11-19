@@ -28,6 +28,8 @@ jobs:
         run: docker version
       - name: Verify
         run: ./mvnw -B clean verify
+      - name: Prepare benchmark results directory
+        run: mkdir -p benchmark-results && chmod 777 benchmark-results
       - name: Start Kafka and application
         run: docker compose up -d --build kafka app
       - name: Wait for application health
