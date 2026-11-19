@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kafkalab.config.LabProperties;
 import com.kafkalab.exception.ValidationFailedException;
+import com.kafkalab.exception.InvalidCommandLineException;
 import com.kafkalab.model.DltMessage;
 import com.kafkalab.model.InputMessage;
 import com.kafkalab.model.OutputMessage;
@@ -40,9 +41,8 @@ public class ValidationRunner implements ApplicationRunner {
     @Override public void run(ApplicationArguments args) throws Exception {
         if (!args.containsOption("validate")) return;
         String runId = required(args, "run-id");
-        long expected = Long.parseLong(required(args, "messages"));
-        long timeoutSeconds = args.containsOption("timeout-seconds")
-                ? Long.parseLong(args.getOptionValues("timeout-seconds").get(0)) : 600L;
+        long expected = positiveLongOption(args, "messages", -1L);
+        long timeoutSeconds = positiveLongOption(args, "timeout-seconds", 600L);
         Properties config = new Properties();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, environment.getProperty("spring.kafka.bootstrap-servers", "localhost:9094"));
         config.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-lab-validator-" + UUID.randomUUID());
@@ -212,9 +212,36 @@ public class ValidationRunner implements ApplicationRunner {
         for (var entry : ends.entrySet()) if (consumer.position(entry.getKey()) < entry.getValue()) return false;
         return true;
     }
-    private String required(ApplicationArguments args, String name) {
-        boolean isRequiredOptionMissing = !args.containsOption(name) || args.getOptionValues(name).isEmpty();
-        if (isRequiredOptionMissing) throw new IllegalArgumentException("--" + name + " is required");
-        return args.getOptionValues(name).get(0);
+    private long positiveLongOption(ApplicationArguments args, String optionName, long defaultValue) {
+        if (!args.containsOption(optionName)) {
+            boolean isRequiredOption = defaultValue < 0;
+            if (isRequiredOption) throw new InvalidCommandLineException("--" + optionName + " is required");
+            return defaultValue;
+        }
+        List<String> optionValues = args.getOptionValues(optionName);
+        boolean isOptionValueMissing = optionValues == null || optionValues.isEmpty();
+        if (isOptionValueMissing) {
+            throw new InvalidCommandLineException("--" + optionName + " requires a value");
+        }
+        long parsedValue;
+        try {
+            parsedValue = Long.parseLong(optionValues.get(0));
+        } catch (NumberFormatException invalidNumber) {
+            throw new InvalidCommandLineException("--" + optionName + " must be a positive integer", invalidNumber);
+        }
+        boolean isValueNotPositive = parsedValue < 1;
+        if (isValueNotPositive) {
+            throw new InvalidCommandLineException("--" + optionName + " must be positive");
+        }
+        return parsedValue;
+    }
+
+    private String required(ApplicationArguments args, String optionName) {
+        boolean isRequiredOptionMissing = !args.containsOption(optionName);
+        if (isRequiredOptionMissing) throw new InvalidCommandLineException("--" + optionName + " is required");
+        List<String> optionValues = args.getOptionValues(optionName);
+        boolean isOptionValueMissing = optionValues == null || optionValues.isEmpty();
+        if (isOptionValueMissing) throw new InvalidCommandLineException("--" + optionName + " requires a value");
+        return optionValues.get(0);
     }
 }
