@@ -36,7 +36,7 @@ final class DiskChecksumStore implements AutoCloseable {
             this.actualPath = actual;
             this.expectedFile = expectedStore;
             this.actualFile = actualStore;
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             if (expectedStore != null) try { expectedStore.close(); } catch (IOException ignored) { }
             if (actualStore != null) try { actualStore.close(); } catch (IOException ignored) { }
             Files.deleteIfExists(expected);
