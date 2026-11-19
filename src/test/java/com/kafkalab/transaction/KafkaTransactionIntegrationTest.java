@@ -123,8 +123,14 @@ class KafkaTransactionIntegrationTest {
             reader.subscribe(List.of(output));
             var result = reader.poll(Duration.ofSeconds(2));
             assertEquals(2, result.count());
-            assertTrue(result.records(output).stream().anyMatch(record -> "aborted".equals(record.value())));
-            assertTrue(result.records(output).stream().anyMatch(record -> "output".equals(record.value())));
+            boolean abortedVisible = false;
+            boolean committedVisible = false;
+            for (var record : result.records(output)) {
+                abortedVisible |= "aborted".equals(record.value());
+                committedVisible |= "output".equals(record.value());
+            }
+            assertTrue(abortedVisible, "read_uncommitted must expose the aborted transactional record");
+            assertTrue(committedVisible, "read_uncommitted must expose the committed record");
         }
 
         Properties restartProperties = new Properties();
