@@ -47,14 +47,20 @@ public class ValidationRunner implements ApplicationRunner {
         config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
-        BitSet sequences = new BitSet(Math.toIntExact(Math.min(expected + 1, Integer.MAX_VALUE)));
-        String[] expectedChecksums = new String[Math.toIntExact(expected + 1)];
-        String[] actualChecksums = new String[Math.toIntExact(expected + 1)];
+        int expectedCount = Math.toIntExact(expected);
+        int sequenceCapacity = Math.toIntExact(expected + 1);
+        BitSet inputSequences = new BitSet(sequenceCapacity);
+        BitSet sequences = new BitSet(sequenceCapacity);
+        long[] latencyNanos = new long[expectedCount];
+        int latencyCount = 0;
         long duplicates = 0, unexpected = 0, invalid = 0, dlt = 0;
-        List<Long> latencyNanos = new ArrayList<>();
         List<TopicPartition> partitions = new ArrayList<>();
         boolean processingComplete = false;
-        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config)) {
+        Path folder = Path.of("benchmark-results", runId);
+        Files.createDirectories(folder);
+        Path output = folder.resolve("validation.json");
+        try (DiskChecksumStore checksumStore = new DiskChecksumStore(folder, expected);
+             KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config)) {
             for (String topic : List.of(properties.inputTopic(), properties.outputTopic(), properties.dltTopic())) {
                 for (PartitionInfo p : consumer.partitionsFor(topic, Duration.ofSeconds(20))) {
                     partitions.add(new TopicPartition(topic, p.partition()));
@@ -93,7 +99,14 @@ public class ValidationRunner implements ApplicationRunner {
                             InputMessage input = mapper.readValue(record.value(), InputMessage.class);
                             if (input.messageId().startsWith(runId + "-")) {
                                 long sequence = input.payload().sequence();
-                                if (sequence >= 1 && sequence <= expected) expectedChecksums[(int) sequence] = checksums.sha256(input.payload().data());
+                                if (sequence >= 1 && sequence <= expected) {
+                                    if (inputSequences.get((int) sequence)) {
+                                        invalid++;
+                                    } else {
+                                        inputSequences.set((int) sequence);
+                                        checksumStore.writeExpected(sequence, checksums.sha256(input.payload().data()));
+                                    }
+                                }
                             }
                         } catch (Exception e) { invalid++; }
                     } else if (record.topic().equals(properties.outputTopic())) {
@@ -110,9 +123,9 @@ public class ValidationRunner implements ApplicationRunner {
                             } else if (sequences.get((int) sequence)) {
                                 duplicates++;
                             } else {
+                                checksumStore.writeActual(sequence, output.result().checksum());
                                 sequences.set((int) sequence);
-                                actualChecksums[(int) sequence] = output.result().checksum();
-                                latencyNanos.add(Duration.between(output.createdAt(), output.processedAt()).toNanos());
+                                latencyNanos[latencyCount++] = Duration.between(output.createdAt(), output.processedAt()).toNanos();
                             }
                         } catch (Exception e) { invalid++; }
                     } else {
@@ -137,9 +150,9 @@ public class ValidationRunner implements ApplicationRunner {
             if (finalEnds == null) {
                 finalEnds = consumer.endOffsets(partitions, Duration.ofSeconds(20));
             }
-        }
-        for (int sequence = sequences.nextSetBit(1); sequence >= 0; sequence = sequences.nextSetBit(sequence + 1)) {
-            if (!Objects.equals(expectedChecksums[sequence], actualChecksums[sequence])) invalid++;
+            for (int sequence = sequences.nextSetBit(1); sequence >= 0; sequence = sequences.nextSetBit(sequence + 1)) {
+                if (!inputSequences.get(sequence) || !checksumStore.matches(sequence)) invalid++;
+            }
         }
         long valid = sequences.cardinality();
         long missing = Math.max(0, expected - valid);
@@ -149,21 +162,21 @@ public class ValidationRunner implements ApplicationRunner {
         report.put("expected", expected); report.put("valid", valid); report.put("failed", dlt);
         report.put("dlt", dlt); report.put("missing", missing); report.put("duplicate", duplicates);
         report.put("unexpected", unexpected); report.put("invalid", invalid);
-        Collections.sort(latencyNanos);
+        Arrays.sort(latencyNanos, 0, latencyCount);
         Map<String, Object> latency = new LinkedHashMap<>();
-        latency.put("count", latencyNanos.size());
-        if (!latencyNanos.isEmpty()) {
-            latency.put("minNanos", latencyNanos.get(0));
-            latency.put("meanNanos", latencyNanos.stream().mapToDouble(Long::doubleValue).average().orElse(0));
-            latency.put("p50Nanos", percentile(latencyNanos, 0.50));
-            latency.put("p95Nanos", percentile(latencyNanos, 0.95));
-            latency.put("p99Nanos", percentile(latencyNanos, 0.99));
-            latency.put("maxNanos", latencyNanos.get(latencyNanos.size() - 1));
+        latency.put("count", latencyCount);
+        if (latencyCount > 0) {
+            long latencySum = 0;
+            for (int i = 0; i < latencyCount; i++) latencySum += latencyNanos[i];
+            latency.put("minNanos", latencyNanos[0]);
+            latency.put("meanNanos", latencySum / (double) latencyCount);
+            latency.put("p50Nanos", percentile(latencyNanos, latencyCount, 0.50));
+            latency.put("p95Nanos", percentile(latencyNanos, latencyCount, 0.95));
+            latency.put("p99Nanos", percentile(latencyNanos, latencyCount, 0.99));
+            latency.put("maxNanos", latencyNanos[latencyCount - 1]);
         }
         report.put("latency", latency);
         report.put("status", processingComplete && missing == 0 && duplicates == 0 && unexpected == 0 && invalid == 0 && dlt == 0 ? "PASS" : "FAIL");
-        Path output = Path.of("benchmark-results", runId, "validation.json");
-        Files.createDirectories(output.getParent());
         mapper.writerWithDefaultPrettyPrinter().writeValue(output.toFile(), report);
         System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report));
         if (!"PASS".equals(report.get("status"))) throw new IllegalStateException("Independent validation failed; see " + output);
@@ -183,9 +196,9 @@ public class ValidationRunner implements ApplicationRunner {
         for (var entry : ends.entrySet()) if (consumer.position(entry.getKey()) < entry.getValue()) return false;
         return true;
     }
-    private long percentile(List<Long> sorted, double percentile) {
-        int index = Math.max(0, (int) Math.ceil(percentile * sorted.size()) - 1);
-        return sorted.get(index);
+    private long percentile(long[] sorted, int count, double percentile) {
+        int index = Math.max(0, (int) Math.ceil(percentile * count) - 1);
+        return sorted[index];
     }
     private String required(ApplicationArguments args, String name) {
         if (!args.containsOption(name) || args.getOptionValues(name).isEmpty()) throw new IllegalArgumentException("--" + name + " is required");
