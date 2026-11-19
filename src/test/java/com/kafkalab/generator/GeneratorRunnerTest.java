@@ -27,4 +27,49 @@ class GeneratorRunnerTest {
         assertTrue(failure.getMessage().contains("global timeout"));
         assertInstanceOf(java.util.concurrent.TimeoutException.class, failure.getCause());
     }
+    @Test
+    void allocatesSingleMessageExactlyOnceAcrossManyWorkers() {
+        assertEquals(List.of(1L), GeneratorRunner.blockStartsForWorker(1, 0, 20, 500));
+        for (int worker = 1; worker < 20; worker++) {
+            assertTrue(GeneratorRunner.blockStartsForWorker(1, worker, 20, 500).isEmpty());
+        }
+    }
+
+    @Test
+    void distributesTenThousandMessagesWithoutGapsOrOverlaps() {
+        for (int workers : List.of(1, 2, 5, 10, 20, 64)) {
+            for (int batchSize : List.of(1, 500, 1000)) {
+                boolean[] seen = new boolean[10_001];
+                for (int worker = 0; worker < workers; worker++) {
+                    for (long blockStart : GeneratorRunner.blockStartsForWorker(10_000, worker, workers, batchSize)) {
+                        long blockEnd = Math.min(10_000, blockStart + batchSize - 1L);
+                        for (long sequence = blockStart; sequence <= blockEnd; sequence++) {
+                            assertFalse(seen[(int) sequence], "duplicate sequence " + sequence);
+                            seen[(int) sequence] = true;
+                        }
+                    }
+                }
+                for (int sequence = 1; sequence <= 10_000; sequence++) {
+                    assertTrue(seen[sequence], "missing sequence " + sequence);
+                }
+            }
+        }
+    }
+
+    @Test
+    void createsEverySupportedPayloadSizeExactly() {
+        for (int size : List.of(1024, 5120, 10240, 51200, 102400)) {
+            String payload = GeneratorRunner.payloadFor(size);
+            assertEquals(size, payload.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+        }
+    }
+
+    @Test
+    void rejectsInvalidBlockAllocationArguments() {
+        assertThrows(IllegalArgumentException.class, () -> GeneratorRunner.blockStartsForWorker(-1, 0, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> GeneratorRunner.blockStartsForWorker(10, 1, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> GeneratorRunner.blockStartsForWorker(10, 0, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> GeneratorRunner.blockStartsForWorker(10, 0, 1, 0));
+    }
+
 }
