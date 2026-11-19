@@ -35,7 +35,7 @@ No uses `docker compose down -v` salvo que quieras borrar expresamente los datos
 |---|---|---|
 | Arrancar stack | `scripts\start.bat` | `bash scripts/start.sh` |
 | Parar stack | `scripts\stop.bat` | `bash scripts/stop.sh` |
-| Generar mensajes | `scripts\generate.bat 10000 smoke-001` | `bash scripts/generate.sh 10000 smoke-001` |
+| Generar mensajes | `scripts\generate.bat 10000 smoke-001 600` | `bash scripts/generate.sh 10000 smoke-001 600` |
 | Validar ejecución | `scripts\validate.bat smoke-001 10000` | `bash scripts/validate.sh smoke-001 10000` |
 | Benchmark principal | `scripts\run-benchmark.bat 1000000` | `bash scripts/run-benchmark.sh 1000000` |
 | Suite completa | `scripts\run-full-suite.bat` | `bash scripts/run-full-suite.sh` |
@@ -94,7 +94,7 @@ Copia `.env.example` a `.env` y modifica solo lo necesario. Los valores predeter
 | `APP_PORT` | 8080 | Puerto HTTP de Spring Boot |
 | `KAFKA_ISOLATION_LEVEL` | read_committed | Aislamiento del consumer Kafka (`read_committed` o `read_uncommitted`) |
 
-No se usan sleeps artificiales en el procesamiento. Rangos: `MESSAGES` > 0; `PARTITIONS` = 24; `CONCURRENCY` = 1/2/5/10/20; `BATCH_SIZE` = 1–10000; `PRODUCER_BATCH_BYTES` > 0; `GENERATOR_THREADS` = 1–64; `PAYLOAD_BYTES` = 1024/5120/10240/51200/102400. `DELIVERY_MODE` y `WORKLOAD` aceptan los enums indicados. `COMPRESSION_TYPE`, `LINGER_MS`, `APP_PORT`, `KAFKA_BOOTSTRAP_SERVERS` y `KAFKA_ISOLATION_LEVEL` se pasan a Spring/Kafka y deben ser compatibles con sus respectivas configuraciones. Las variables de Compose se interpolan desde `.env`; los valores de Spring tienen defaults equivalentes. Las variables se validan al arrancar cuando están mapeadas a `LabProperties`.
+El generador tiene un timeout global de 600 segundos por defecto; el tercer argumento de `generate.bat`/`generate.sh` permite cambiarlo (segundos). Los escenarios del benchmark aceptan `GENERATOR_TIMEOUT_SECONDS` como variable de entorno. No se usan sleeps artificiales en el procesamiento. Rangos: `MESSAGES` > 0; `PARTITIONS` = 24; `CONCURRENCY` = 1/2/5/10/20; `BATCH_SIZE` = 1–10000; `PRODUCER_BATCH_BYTES` > 0; `GENERATOR_THREADS` = 1–64; `PAYLOAD_BYTES` = 1024/5120/10240/51200/102400. `DELIVERY_MODE` y `WORKLOAD` aceptan los enums indicados. `COMPRESSION_TYPE`, `LINGER_MS`, `APP_PORT`, `KAFKA_BOOTSTRAP_SERVERS` y `KAFKA_ISOLATION_LEVEL` se pasan a Spring/Kafka y deben ser compatibles con sus respectivas configuraciones. Las variables de Compose se interpolan desde `.env`; los valores de Spring tienen defaults equivalentes. Las variables se validan al arrancar cuando están mapeadas a `LabProperties`.
 
 ## Resultados
 
