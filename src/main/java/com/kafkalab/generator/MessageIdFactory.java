@@ -1,5 +1,6 @@
 package com.kafkalab.generator;
 
+import com.kafkalab.exception.InvalidMessageIdException;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +12,7 @@ public class MessageIdFactory {
         boolean hasInvalidRunId = runId == null || runId.isBlank();
         boolean hasNonPositiveSequence = sequence < 1;
         if (hasInvalidRunId || hasNonPositiveSequence) {
-            throw new IllegalArgumentException("runId and positive sequence are required");
+            throw new InvalidMessageIdException("runId and positive sequence are required");
         }
         return runId + "-" + sequence;
     }
