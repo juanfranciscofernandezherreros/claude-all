@@ -185,7 +185,8 @@ jobs:
               assert environment["resourceSampleCount"] >= 1, environment
               samples = json.loads((folder / "resource-samples.json").read_text(encoding="utf-8"))
               assert len(samples) == environment["resourceSampleCount"]
-          assert {row["deliveryMode"] for row in rows} == {"AT_LEAST_ONCE", "EXACTLY_ONCE"}\n          print("6 benchmark repetitions passed across AT_LEAST_ONCE and EXACTLY_ONCE; all artifacts and periodic resource samples present.")
+          assert {row["deliveryMode"] for row in rows} == {"AT_LEAST_ONCE", "EXACTLY_ONCE"}
+          print("6 benchmark repetitions passed across AT_LEAST_ONCE and EXACTLY_ONCE; all artifacts and periodic resource samples present.")
           PY
       - name: Stop Kafka stack
         if: always()
