@@ -261,7 +261,7 @@ RunId: UUID por ejecución; messageId determinista `<runId>-<sequence>` (string,
   - Pasos: crear pares .bat/.sh; validar argumentos; cambiar al directorio raíz; propagar exit codes; imprimir ayuda breve; scripts idempotentes.
   - Artefactos: scripts/ y launchers raíz.
   - Prueba: invocar ayuda, start/stop y benchmark smoke desde Windows y shell cuando disponibles.
-- [ ] B10.2 **BLOCKED — el launcher arranca Docker y benchmark sin Claude; falta alinear los pasos de aceptación del backlog con el launcher autónomo y validar rutas/errores en Windows. No debe añadirse ejecución con permisos peligrosos.**
+- [x] B10.2 **DONE — pendiente de prueba Windows real.** `RUN-KAFKA-LAB.bat` es launcher autónomo: comprueba Docker, inicia Docker Desktop si está instalado/parado, espera hasta 120s, prepara ACL de `benchmark-results`, arranca Compose y ejecuta benchmark 1M; no invoca Claude ni usa permisos peligrosos. Git Bash se documenta como prerequisito de los scripts `.bat` que delegan en `.sh`. Implementación ya presente en `main`; falta ejecutar en Windows real y validar errores/rutas.
   - Pasos: comprobar comandos; localizar Docker Desktop; iniciar si detenido; esperar máximo 120s; verificar PRD/BACKLOG; ejecutar Claude con instrucciones mínimas; preservar exit code y pausar solo al final.
   - Artefactos: RUN-KAFKA-LAB.bat.
   - Prueba: revisar rutas con espacios, Docker detenido/activo/no instalado y Claude ausente; no ejecutar permisos peligrosos sin advertencia visible.
